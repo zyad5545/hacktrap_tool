@@ -1,0 +1,7 @@
+flask==2.0.3
+werkzeug==2.0.3
+numpy==1.23.2
+tensorflow==2.9.0
+requests
+scikit-learn
+joblib

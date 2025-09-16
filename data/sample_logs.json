@@ -1,0 +1,62 @@
+[
+  {
+    "timestamp": "2023-10-05T14:32:18Z",
+    "source_ip": "192.168.23.45",
+    "event_type": "login_attempt",
+    "status": "failed",
+    "username": "admin",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "request_path": "/login",
+    "request_method": "POST",
+    "response_code": 401,
+    "anomaly_score": 0.92
+  },
+  {
+    "timestamp": "2023-10-05T14:32:19Z",
+    "source_ip": "192.168.23.45",
+    "event_type": "login_attempt",
+    "status": "failed",
+    "username": "admin",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "request_path": "/login",
+    "request_method": "POST",
+    "response_code": 401,
+    "anomaly_score": 0.94
+  },
+  {
+    "timestamp": "2023-10-05T14:32:20Z",
+    "source_ip": "192.168.23.45",
+    "event_type": "login_attempt",
+    "status": "failed",
+    "username": "root",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "request_path": "/login",
+    "request_method": "POST",
+    "response_code": 401,
+    "anomaly_score": 0.96
+  },
+  {
+    "timestamp": "2023-10-05T14:32:21Z",
+    "source_ip": "192.168.23.45",
+    "event_type": "login_attempt",
+    "status": "failed",
+    "username": "test",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "request_path": "/login",
+    "request_method": "POST",
+    "response_code": 401,
+    "anomaly_score": 0.98
+  },
+  {
+    "timestamp": "2023-10-05T14:32:22Z",
+    "source_ip": "192.168.23.45",
+    "event_type": "login_attempt",
+    "status": "failed",
+    "username": "guest",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "request_path": "/login",
+    "request_method": "POST",
+    "response_code": 401,
+    "anomaly_score": 0.99
+  }
+]
