@@ -32,3 +32,9 @@ dist/
 # core dumps
 core.*
 
+
+# DB & runtime
+*.db
+__pycache__/
+cowrie/
+
