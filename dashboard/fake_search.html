@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>صفحة وهمية — Honeypot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    pre.payload { white-space: pre-wrap; word-break: break-word; background:#f8fafc; padding:12px; border-radius:6px; border:1px dashed #cbd5e1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-indigo-600 text-white py-4">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-xl font-semibold">نتائج البحث — (نسخة وهمية)</h1>
+      <p class="text-sm mt-1 opacity-90">صفحة مصممة للصيد — لا تُنفِّذ الكود المرسَل.</p>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+      <div id="notice" class="text-gray-600 mb-4">جاري عرض النتيجة الوهمية...</div>
+
+      <div>
+        <h3 class="font-medium">الاستعلام (payload)</h3>
+        <pre id="payloadView" class="payload mt-2"></pre>
+      </div>
+
+      <div id="telemetryStatus" class="mt-4 text-sm text-gray-600">لم يتم إرسال بيانات الهونيبوت بعد.</div>
+
+      <div class="mt-6">
+        <button id="showDemo" class="px-4 py-2 bg-indigo-600 text-white rounded">عرض نتيجة تجريبية</button>
+        <a class="ml-4 text-sm text-gray-600" href="/original_search.html">العودة إلى صفحة البحث</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center p-6 text-sm text-gray-500">© HackTrap</footer>
+
+<script>
+(function(){
+  // read param p or q
+  function getParam(name){
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name) || '';
+  }
+  function decodeSafe(s){
+    if(!s) return '';
+    try { return decodeURIComponent(s.replace(/\+/g,' ')); } catch(e) { return s; }
+  }
+
+  const raw = getParam('p') || getParam('q') || '';
+  const payload = decodeSafe(raw);
+  document.getElementById('payloadView').textContent = payload || '[لا يوجد استعلام]';
+  document.getElementById('notice').textContent = payload ? 'عرض الاستعلام (غير منفّذ).' : 'لم يتم توفير استعلام.';
+
+  async function sendCapture(executed=false, alert_msg=null){
+    const info = {
+      payload: payload,
+      executed: !!executed,
+      alert_message: alert_msg || null,
+      timestamp: new Date().toISOString(),
+      user_agent: navigator.userAgent || '',
+      referringUrl: document.referrer || ''
+    };
+    try {
+      const resp = await fetch('/api/honeypot/capture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': 'honeypot-secure-key' // تأكد أن HONEYPOT_API_KEY على الخادم يساوي هذه القيمة
+        },
+        body: JSON.stringify(info)
+      });
+      const j = await resp.json().catch(()=>({}));
+      document.getElementById('telemetryStatus').innerHTML = resp.ok
+        ? `تم إرسال capture — event_id: <strong>${j.event_id || 'N/A'}</strong>`
+        : `فشل الإرسال (HTTP ${resp.status})`;
+    } catch(err) {
+      document.getElementById('telemetryStatus').textContent = 'خطأ عند إرسال capture: ' + (err.message || err);
+      console.error(err);
+    }
+  }
+
+  // إرسال تلقائي عند فتح الصفحة (غير منفِّذ)
+  if(payload) {
+    sendCapture(false, null);
+  }
+
+  document.getElementById('showDemo').addEventListener('click', function(){
+    const demo = document.createElement('div');
+    demo.className = 'mt-4 p-3 bg-gray-100 rounded';
+    demo.innerHTML = `<strong>عرض تجريبي:</strong> هذه نتيجة وهمية توضح كيف تظهر النتيجة. الاستعلام: <pre class="mt-2">${payload || '[لا يوجد]'}</pre>`;
+    document.querySelector('.max-w-3xl').appendChild(demo);
+  });
+
+})();
+</script>
+</body>
+</html>
