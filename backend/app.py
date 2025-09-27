@@ -542,9 +542,51 @@ def list_events():
 @require_api_key
 def api_attacks():
     conn = get_connection()
-    rows = [dict(r) for r in conn.execute("SELECT * FROM attacks ORDER BY id DESC LIMIT 200")]
+    rows = conn.execute("""
+        SELECT
+          id,
+          timestamp,
+          attack_type,
+          source_ip,
+          target_resource,
+          severity,
+          details,
+          blockchain_tx_hash,
+          status,
+          anomaly_score,
+          COALESCE(
+            json_extract(details, '$.payload'),
+            json_extract(details, '$.query'),
+            json_extract(details, '$.telemetry.payload'),
+            json_extract(details, '$.alert_message'),
+            json_extract(details, '$.honeypot.payload'),
+            NULL
+          ) AS payload
+        FROM attacks
+        ORDER BY id DESC
+        LIMIT 200
+    """).fetchall()
     conn.close()
-    return jsonify({"attacks": rows})
+
+    attacks = []
+    for r in rows:
+        rr = dict(r)
+        attacks.append({
+            "id": rr.get("id"),
+            "timestamp": rr.get("timestamp"),
+            "attack_type": rr.get("attack_type"),
+            "source_ip": rr.get("source_ip"),
+            "target_resource": rr.get("target_resource"),
+            "severity": rr.get("severity"),
+            "payload": rr.get("payload"),
+            "details": rr.get("details"),
+            "blockchain_tx_hash": rr.get("blockchain_tx_hash"),
+            "status": rr.get("status"),
+            "anomaly_score": rr.get("anomaly_score")
+        })
+
+    return jsonify({"attacks": attacks})
+
 
 @app.route("/api/blockchain", methods=["GET"])
 @require_api_key

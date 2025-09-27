@@ -38,3 +38,9 @@ core.*
 __pycache__/
 cowrie/
 
+
+# more runtime ignores
+*.pyc
+*.pyo
+*.db
+
