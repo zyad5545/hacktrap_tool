@@ -1,0 +1,69 @@
+diff --git a/backend/app.py b/backend/app.py
+index 1234567..89abcde 100644
+--- a/backend/app.py
++++ b/backend/app.py
+@@
+ @app.route('/api/honeypot/capture', methods=['POST'])
+ @require_api_key
+ def api_honeypot_capture():
+-    data = request.get_json() or {}
+-    try:
+-        # existing logic: save honeypot event only
+-        conn = sqlite3.connect(DB_PATH)
+-        cur = conn.cursor()
+-        cur.execute(
+-            "INSERT INTO honeypot_events (payload, meta, source_ip, created_at) VALUES (?, ?, ?, datetime('now'))",
+-            (data.get('payload'), json.dumps(data), request.remote_addr)
+-        )
+-        he_id = cur.lastrowid
+-        conn.commit()
+-        conn.close()
+-        return jsonify({'status':'ok','event_id': he_id}), 200
+-    except Exception as e:
+-        app.logger.exception('honeypot capture failed')
+-        return jsonify({'status':'error','error': str(e)}), 500
++    data = request.get_json() or {}
++    try:
++        conn = sqlite3.connect(DB_PATH)
++        conn.row_factory = sqlite3.Row
++        cur = conn.cursor()
++
++        # 1) insert honeypot event
++        cur.execute(
++            "INSERT INTO honeypot_events (payload, meta, source_ip, created_at, anchored_tx) VALUES (?, ?, ?, datetime('now'), ?)",
++            (data.get('payload'), json.dumps(data), request.remote_addr, None)
++        )
++        he_id = cur.lastrowid
++
++        # 2) derive basic attack fields
++        payload_text = (data.get('payload') or '')[:10000]
++        attack_type = 'xss' if ('<script' in payload_text.lower() or 'javascript:' in payload_text.lower() or 'alert(' in payload_text.lower()) else 'unknown'
++        severity = 'high' if attack_type == 'xss' else 'low'
++
++        # 3) insert attack linked to honeypot_event_id
++        cur.execute(
++            """INSERT INTO attacks (timestamp, attack_type, source_ip, target_resource, severity, details, blockchain_tx_hash, status, anomaly_score, payload, honeypot_event_id)
++               VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
++            (attack_type, request.remote_addr, '/', severity, json.dumps({'meta':data}), None, 'new', None, payload_text, he_id)
++        )
++        attack_id = cur.lastrowid
++
++        conn.commit()
++        conn.close()
++
++        # 4) optional: blockchain anchoring
++        try:
++            tx = anchor_to_blockchain({'event_id': he_id, 'payload': payload_text})
++            conn = sqlite3.connect(DB_PATH)
++            cur = conn.cursor()
++            cur.execute("UPDATE honeypot_events SET anchored_tx = ? WHERE id = ?", (tx, he_id))
++            cur.execute("UPDATE attacks SET blockchain_tx_hash = ? WHERE id = ?", (tx, attack_id))
++            conn.commit()
++            conn.close()
++        except Exception:
++            app.logger.debug("anchoring skipped or failed")
++
++        return jsonify({'status':'ok','event_id': he_id, 'attack_id': attack_id}), 200
++    except Exception as e:
++        app.logger.exception('honeypot capture failed')
++        return jsonify({'status':'error','error': str(e)}), 500
