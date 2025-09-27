@@ -1,0 +1,334 @@
+#!/usr/bin/env python3
+# backend/app.py — unified robust backend for AI detection + honeypot logging
+
+import os
+import re
+import joblib
+import urllib.parse
+import logging
+import traceback
+from functools import wraps
+from flask import Flask, request, jsonify, current_app
+from flask_cors import CORS
+import requests
+from werkzeug.exceptions import HTTPException
+
+# local DB helpers (keep your db.py as-is)
+# NOTE: removed update_attack_status import because some db.py variants may not provide it.
+from db import init_db, ensure_honeypot_schema, log_attack, log_honeypot_event, update_honeypot_anchor, get_connection
+
+# optionally anchor to blockchain (best-effort)
+try:
+    from blockchain import anchor_data
+except Exception:
+    anchor_data = None
+
+# ===== APP SETUP =====
+app = Flask(__name__)
+CORS(app)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ===== CONFIG (env overrides allowed) =====
+MODEL_PATHS = [
+    os.getenv("MODEL_PATH", "data/model.joblib"),
+    "ai_agent/data/model.joblib",
+    "ai_agent/data/attack_model.joblib",
+    "data/model.joblib",
+    "/app/data/model.joblib",
+]
+
+XSS_MODEL_PATHS = [
+    os.getenv("XSS_MODEL_PATH", "data/xss_model.joblib"),
+    "ai_agent/data/xss_model.joblib",
+    "./ai_agent/data/xss_model.joblib",
+    "/app/data/xss_model.joblib",
+]
+
+AI_ENDPOINT = os.getenv("AI_ENDPOINT", None)
+HONEY_API_KEY = os.getenv("HONEY_API_KEY", "honeypot-secure-key")
+XSS_DETECT_THRESHOLD = float(os.getenv("XSS_DETECT_THRESHOLD", "0.5"))
+
+# models
+attack_model = None
+attack_model_path = None
+xss_model = None
+xss_model_path = None
+
+def try_load_model(paths):
+    for p in paths:
+        try:
+            if p and os.path.exists(p):
+                logger.info("Attempting to load model from: %s", p)
+                m = joblib.load(p)
+                logger.info("Loaded model from %s (type=%s)", p, type(m))
+                return m, p
+        except Exception:
+            logger.exception("Failed to load model %s", p)
+    return None, None
+
+# ===== DB INIT (safe to call) =====
+try:
+    init_db()
+    ensure_honeypot_schema()
+    logger.info("DB initialized and schema ensured")
+except Exception:
+    logger.exception("DB init failed (continuing)")
+
+# load models (if present)
+try:
+    attack_model, attack_model_path = try_load_model(MODEL_PATHS)
+    xss_model, xss_model_path = try_load_model(XSS_MODEL_PATHS)
+except Exception:
+    logger.exception("Model loading failed")
+
+logger.info("attack_model_path=%s xss_model_path=%s", attack_model_path, xss_model_path)
+
+# ===== GLOBAL JSON ERROR HANDLER (so clients always get JSON) =====
+@app.errorhandler(Exception)
+def handle_all_exceptions(e):
+    code = 500
+    if isinstance(e, HTTPException):
+        code = e.code
+        msg = e.description
+    else:
+        msg = str(e)
+    logger.exception("Unhandled exception: %s", msg)
+    response = {"error": "internal_error" if code==500 else "error", "message": msg}
+    if app.debug:
+        response["trace"] = traceback.format_exc()
+    return jsonify(response), code
+
+# ===== HELPERS =====
+def sanitize_string(input_string, max_length=1000):
+    if not input_string:
+        return ""
+    s = str(input_string)[:max_length]
+    # remove null bytes and strip
+    return s.replace("\x00", "").strip()
+
+def call_ai_endpoint(text):
+    if not AI_ENDPOINT:
+        return {"malicious": False, "attack_type": "normal", "score": 0.0}
+    try:
+        r = requests.post(AI_ENDPOINT, json={"query": text}, timeout=5)
+        if r.status_code == 200:
+            return r.json()
+    except Exception:
+        logger.exception("Failed to call remote AI endpoint")
+    return {"malicious": False, "attack_type": "normal", "score": 0.0}
+
+def detect_attack_ai(text):
+    """
+    Attempts (in order):
+      1) local multi-class attack_model (dict with vect+clf or pipeline)
+      2) local xss_model binary detector (dict or pipeline)
+      3) remote AI endpoint (AI_ENDPOINT)
+      4) heuristics fallback
+    Returns: (attack_type: str, score: float)
+    """
+    if not text or not text.strip():
+        return "normal", 0.0
+    low = text.lower()
+    try:
+        # 1) attack_model (multi-class)
+        if attack_model is not None:
+            try:
+                if isinstance(attack_model, dict) and "vect" in attack_model and "clf" in attack_model:
+                    vect = attack_model["vect"]
+                    clf = attack_model["clf"]
+                    X = vect.transform([text])
+                    probs = clf.predict_proba(X)[0]
+                    idx = int(probs.argmax())
+                    classes = getattr(clf, "classes_", None)
+                    cls = classes[idx] if classes is not None else str(idx)
+                    return str(cls), float(probs[idx])
+                # pipeline that accepts raw text or has predict_proba
+                if hasattr(attack_model, "predict_proba"):
+                    probs = attack_model.predict_proba([text])[0]
+                    idx = int(probs.argmax())
+                    classes = getattr(attack_model, "classes_", None) or getattr(attack_model, "classes_", None)
+                    cls = classes[idx] if classes is not None else str(idx)
+                    return str(cls), float(probs[idx])
+            except Exception:
+                logger.exception("attack_model predict failed (continuing)")
+
+        # 2) xss binary model
+        if xss_model is not None:
+            try:
+                if isinstance(xss_model, dict) and "xss_vect" in xss_model and "xss_clf" in xss_model:
+                    X = xss_model["xss_vect"].transform([text])
+                    prob = float(xss_model["xss_clf"].predict_proba(X)[0][1])
+                    return ("xss" if prob>0.5 else "normal"), prob
+                # pipeline that accepts raw text and returns predict_proba
+                if hasattr(xss_model, "predict_proba") and not hasattr(xss_model, "transform"):
+                    prob = float(xss_model.predict_proba([text])[0][1])
+                    return ("xss" if prob>0.5 else "normal"), prob
+                # pipeline with transform + predict_proba
+                if hasattr(xss_model, "transform") and hasattr(xss_model, "predict_proba"):
+                    X = xss_model.transform([text])
+                    prob = float(xss_model.predict_proba(X)[0][1])
+                    return ("xss" if prob>0.5 else "normal"), prob
+            except Exception:
+                logger.exception("xss_model predict failed (continuing)")
+
+        # 3) remote AI endpoint fallback
+        ai_res = call_ai_endpoint(text)
+        if isinstance(ai_res, dict):
+            attack_type = ai_res.get("attack_type") or ("xss" if ai_res.get("malicious") else "normal")
+            score = float(ai_res.get("score") or 0.0)
+            return str(attack_type), score
+
+    except Exception:
+        logger.exception("AI detection failed")
+
+    # 4) heuristics fallback (conservative)
+    heuristics = ["<script", "javascript:", "onerror=", "onload=", "alert(", "prompt(", "confirm("]
+    for h in heuristics:
+        if h in low:
+            return "xss", 1.0
+    return "normal", 0.0
+
+# ===== API KEY decorator for honeypot endpoints =====
+def require_api_key(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get("X-API-KEY") or request.args.get("api_key") or request.headers.get("Authorization")
+        if api_key and api_key.lower().startswith("bearer "):
+            api_key = api_key.split(None,1)[1].strip()
+        if api_key != HONEY_API_KEY:
+            return jsonify({"error":"Invalid API key"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+# ===== ENDPOINTS =====
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status":"ok", "ai_model": bool(attack_model_path), "xss_model": bool(xss_model_path)})
+
+@app.route("/search", methods=["POST"])
+def handle_search():
+    data = request.get_json(silent=True) or {}
+    query = (data.get("query") or "").strip()
+    if query == "":
+        return jsonify({"query": "", "results": ["يرجى إدخال استعلام صحيح"]})
+
+    logger.info("Received search query from %s: %r", request.remote_addr, query)
+    attack_type, score = detect_attack_ai(query)
+    logger.info("AI result: %s (score=%.3f)", attack_type, score)
+
+    if attack_type != "normal" and score >= 0.5:
+        try:
+            event = {
+                "timestamp": None,
+                "attack_type": attack_type,
+                "source_ip": request.remote_addr,
+                "target_resource": "/search",
+                "user_agent": request.headers.get("User-Agent",""),
+                "payload": sanitize_string(query),
+                "severity": "high" if score >= 0.8 else "medium",
+                "details": {"ai_score": score},
+                "anomaly_score": score
+            }
+            aid = log_attack(event)
+            logger.info("Logged attack id=%s", aid)
+        except Exception:
+            logger.exception("Failed to log attack")
+
+        safe_q = urllib.parse.quote(sanitize_string(query))
+        return jsonify({"redirect": f"/fake_search.html?q={safe_q}", "message": "الذكاء الاصطناعي كشف محاولة هجوم — تحويل إلى honeypot"}), 200
+
+    return jsonify({"query": query, "results": ["نتيجة بحث عادية 1", "نتيجة بحث عادية 2"]})
+
+@app.route("/test/predict", methods=["POST"])
+def test_predict():
+    data = request.get_json(silent=True) or {}
+    text = data.get("query") or data.get("text") or ""
+    attack_type, score = detect_attack_ai(text)
+    return jsonify({"query": text, "attack_type": attack_type, "score": score})
+
+@app.route("/api/honeypot/capture", methods=["POST"])
+@require_api_key
+def capture_honeypot_data():
+    try:
+        data = request.get_json(force=True)
+        sanitized_data = {
+            "timestamp": sanitize_string(data.get("timestamp") or ""),
+            "source_ip": data.get("source_ip") or request.remote_addr,
+            "user_agent": sanitize_string(data.get("userAgent") or data.get("user_agent") or request.headers.get("User-Agent","")),
+            "cookies": sanitize_string(data.get("cookies","")),
+            "localStorage": sanitize_string(data.get("localStorage","")),
+            "sessionStorage": sanitize_string(data.get("sessionStorage","")),
+            "payload": sanitize_string(data.get("payload","")),
+            "referringUrl": sanitize_string(data.get("referringUrl","") or data.get("referrer","")),
+            "anchored_tx": None,
+            "raw": sanitize_string(data.get("raw","")),
+            "json_payload": None
+        }
+        event_id = log_honeypot_event(sanitized_data)
+        tx_hash = None
+        try:
+            if anchor_data:
+                tx_hash = anchor_data(sanitized_data)
+        except Exception:
+            logger.exception("anchor_data failed")
+            tx_hash = None
+        if tx_hash and event_id:
+            try:
+                update_honeypot_anchor(event_id, tx_hash)
+            except Exception:
+                logger.exception("Failed to update anchor tx")
+        return jsonify({"status":"success","event_id":event_id,"tx_hash":tx_hash})
+    except Exception as e:
+        current_app.logger.exception("Error in /api/honeypot/capture")
+        return jsonify({"error":str(e),"trace":traceback.format_exc()}), 500
+
+# optional list/get honeypot events for UI (API key protected)
+@app.route("/api/honeypot/events", methods=["GET"])
+@require_api_key
+def list_honeypot_events():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(honeypot_events);")
+    cols = {r[1] for r in cur.fetchall()}
+    if "created_at" in cols:
+        q = """
+        SELECT id, timestamp, source_ip, user_agent, payload, referringUrl, anchored_tx,
+               COALESCE(created_at, timestamp, id) as created_at
+        FROM honeypot_events
+        ORDER BY created_at DESC
+        LIMIT 50
+        """
+    else:
+        q = """
+        SELECT id, timestamp, source_ip, user_agent, payload, referringUrl, anchored_tx,
+               COALESCE(timestamp, id) as created_at
+        FROM honeypot_events
+        ORDER BY created_at DESC
+        LIMIT 50
+        """
+    cur.execute(q)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+@app.route("/api/honeypot/events/<int:event_id>", methods=["GET"])
+@require_api_key
+def get_honeypot_event(event_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM honeypot_events WHERE id = ?", (event_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error":"not_found"}), 404
+    return jsonify(dict(row))
+
+# ===== MAIN =====
+if __name__ == "__main__":
+    # reload models on each start (in case env override provided)
+    attack_model, attack_model_path = try_load_model(MODEL_PATHS)
+    xss_model, xss_model_path = try_load_model(XSS_MODEL_PATHS)
+    logger.info("Starting app; attack_model=%s xss_model=%s", bool(attack_model_path), bool(xss_model_path))
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)

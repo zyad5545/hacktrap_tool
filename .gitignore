@@ -1,0 +1,7 @@
+# ignore crash core dumps
+core.*
+*/core.*
+backend/cors/core.*
+# ignore blockchain runtime data
+blockchain-data/
+

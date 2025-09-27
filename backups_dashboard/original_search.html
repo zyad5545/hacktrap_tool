@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>البحث — HackTrap</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-blue-600 text-white py-4">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-2xl font-bold">نظام البحث — HackTrap</h1>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <form id="searchForm" class="flex gap-2">
+        <input id="searchInput" placeholder="اكتب بحثك هنا..." class="flex-grow p-3 rounded border" />
+        <button id="searchBtn" type="submit" class="px-4 py-3 bg-blue-600 text-white rounded">بحث</button>
+      </form>
+
+      <div id="loading" class="mt-4 hidden">
+        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <p class="text-sm text-gray-600 mt-2">جاري التحميل...</p>
+      </div>
+
+      <div id="error" class="mt-4 hidden bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded"></div>
+      <div id="results" class="mt-4 hidden bg-white rounded shadow p-4"></div>
+    </div>
+  </main>
+
+  <footer class="text-center p-6 text-sm text-gray-500">
+    © HackTrap
+  </footer>
+
+<script>
+document.getElementById('searchForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const query = (document.getElementById('searchInput').value || "").trim();
+  const loading = document.getElementById('loading');
+  const results = document.getElementById('results');
+  const error = document.getElementById('error');
+
+  results.classList.add('hidden');
+  error.classList.add('hidden');
+  if(!query) {
+    error.textContent = 'الرجاء إدخال نص البحث.';
+    error.classList.remove('hidden');
+    return;
+  }
+
+  loading.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: JSON.stringify({query: query})
+    });
+    const data = await resp.json();
+    loading.classList.add('hidden');
+
+    if(data.redirect) {
+      // server instructs to redirect to honeypot
+      window.location.href = data.redirect;
+      return;
+    }
+
+    if(data.error) {
+      error.textContent = data.error;
+      error.classList.remove('hidden');
+      return;
+    }
+
+    // show results
+    const list = (data.results || []).map(r => `<li class="py-1 border-b">${r}</li>`).join('');
+    results.innerHTML = `<h3 class="font-semibold mb-2">نتائج البحث عن: <span class="text-blue-600">${data.query}</span></h3>
+                         <ul class="divide-y">${list}</ul>`;
+    results.classList.remove('hidden');
+
+  } catch (err) {
+    loading.classList.add('hidden');
+    error.textContent = 'فشل الاتصال بالخادم: ' + (err.message || err);
+    error.classList.remove('hidden');
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>

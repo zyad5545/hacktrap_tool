@@ -1,39 +1,38 @@
-// dashboard/static/attacks-poller.js
-const API_KEY = 'demo-key';
+// attacks-poller.js - poll /api/attacks on same origin
 async function fetchAttacks() {
-    try {
-        const res = await fetch('/api/attacks?limit=50', {
-            headers: { 'X-API-KEY': API_KEY }
-        });
-        const data = await res.json();
-        if (data.attacks) {
-            renderAttacks(data.attacks);
-        }
-    } catch (e) {
-        console.error('Failed to fetch attacks', e);
+  try {
+    const resp = await fetch('/api/attacks', { credentials: 'same-origin' });
+    const contentType = resp.headers.get('content-type') || '';
+    if (!resp.ok) {
+      console.warn('attacks poll bad status', resp.status);
+      return [];
     }
+    if (contentType.includes('application/json')) {
+      return await resp.json();
+    } else {
+      // Received HTML or text instead of JSON — avoid bad_json
+      console.warn('attacks poll got non-json:', contentType);
+      return [];
+    }
+  } catch (e) {
+    console.error('attacks poll error', e);
+    return [];
+  }
 }
 
-function renderAttacks(attacks) {
-    const tbody = document.getElementById('attacks-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    attacks.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${a.id}</td>
-            <td>${a.attack_type}</td>
-            <td>${a.source_ip}</td>
-            <td>${a.timestamp}</td>
-            <td>${a.status || 'unknown'}</td>
-            <td>${a.severity || ''}</td>
-            <td>${a.blockchain_tx_hash ? `<a href="#" title="${a.blockchain_tx_hash}">${a.blockchain_tx_hash.slice(0,10)}...</a>` : '—'}</td>
-            <td><button class="view-details" data-id="${a.id}">View</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
+function renderAttacks(list) {
+  // simple renderer (replace with your real rendering)
+  const el = document.getElementById('attacks-list');
+  if (!el) return;
+  el.innerHTML = list.length ? list.map(a => `<li>${a.id} ${a.payload || ''} ${a.severity || ''}</li>`).join('') : '<li>No attacks</li>';
 }
 
-// poll every 5s
-setInterval(fetchAttacks, 5000);
-document.addEventListener('DOMContentLoaded', fetchAttacks);
+async function startPoller(intervalSeconds = 2.0) {
+  setInterval(async () => {
+    const attacks = await fetchAttacks();
+    renderAttacks(attacks);
+  }, Math.max(500, intervalSeconds * 1000));
+}
+
+// start
+startPoller(parseFloat(window.DASH_POLL_INTERVAL || 2.0));

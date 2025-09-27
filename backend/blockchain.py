@@ -1,72 +1,74 @@
-from web3 import Web3
+# backend/blockchain.py
 import json
+import hashlib
+import logging
 import os
-from dotenv import load_dotenv
+from datetime import datetime
 
-load_dotenv()
+import requests
 
-def get_web3():
-    """Initialize Web3 connection"""
-    rpc_url = os.getenv('BLOCKCHAIN_RPC', 'http://localhost:8545')
-    return Web3(Web3.HTTPProvider(rpc_url))
+logger = logging.getLogger(__name__)
+RPC = os.getenv("BLOCKCHAIN_RPC", "http://hacktrap_blockchain:8545")
+ANCHORS_LOG = os.path.join("data", "anchors.log")
 
-def load_contract():
-    """Load the contract ABI and address"""
-    contract_address = os.getenv('CONTRACT_ADDRESS')
-    
-    # In a real implementation, you would load this from a file
-    contract_abi = [
-        {
-            "inputs": [{"internalType": "bytes32", "name": "hash", "type": "bytes32"}],
-            "name": "anchorHash",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [{"internalType": "bytes32", "name": "hash", "type": "bytes32"}],
-            "name": "anchoredHashes",
-            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ]
-    
-    w3 = get_web3()
-    return w3.eth.contract(address=contract_address, abi=contract_abi)
 
-def anchor_data(data):
-    """
-    Anchor data to the blockchain by storing its hash
-    Returns transaction hash
-    """
+def _json_rpc(payload):
+    r = requests.post(RPC, json=payload, timeout=6)
+    r.raise_for_status()
+    return r.json()
+
+
+def anchor_via_rpc(payload_obj):
     try:
-        # Convert data to hash
-        data_str = json.dumps(data, sort_keys=True)
-        data_hash = Web3.keccak(text=data_str)
-        
-        # Get contract instance
-        contract = load_contract()
-        
-        # Get account and private key
-        private_key = os.getenv('RELAYER_PRIVATE_KEY')
-        account = Web3().eth.account.from_key(private_key)
-        
-        # Build transaction
-        nonce = Web3().eth.get_transaction_count(account.address)
-        tx = contract.functions.anchorHash(data_hash).build_transaction({
-            'chainId': int(os.getenv('CHAIN_ID', 1337)),
-            'gas': 100000,
-            'gasPrice': Web3.to_wei('10', 'gwei'),
-            'nonce': nonce,
-        })
-        
-        # Sign and send transaction
-        signed_tx = Web3().eth.account.sign_transaction(tx, private_key)
-        tx_hash = Web3().eth.send_raw_transaction(signed_tx.rawTransaction)
-        
-        return tx_hash.hex()
-    
+        payload = json.dumps(payload_obj, sort_keys=True, ensure_ascii=False)
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        data_hex = "0x" + digest
+
+        # get accounts
+        res = _json_rpc({"jsonrpc": "2.0", "method": "eth_accounts", "params": [], "id": 1})
+        accounts = res.get("result", [])
+        if not accounts:
+            logger.warning("anchor_via_rpc: no accounts returned from RPC")
+            return None
+
+        tx = {"from": accounts[0], "to": accounts[0], "value": "0x0", "data": data_hex}
+        res2 = _json_rpc({"jsonrpc": "2.0", "method": "eth_sendTransaction", "params": [tx], "id": 2})
+        tx_hash = res2.get("result")
+        logger.info("anchor_via_rpc: sent tx %s", tx_hash)
+        return tx_hash
     except Exception as e:
-        print(f"Error anchoring data to blockchain: {e}")
+        logger.exception("anchor_via_rpc failed: %s", e)
+        return None
+
+
+def anchor_data(obj: dict):
+    """
+    Try to anchor on-chain (via JSON-RPC). If RPC fails, fallback to local SHA256
+    with timestamp and a local log file (tamper-evident).
+    Returns: tx_hash_or_local_digest (string) or None on failure.
+    """
+    # 1) try RPC anchor if RPC configured
+    try:
+        if os.getenv("ANCHORING_ENABLED", "true").lower() in ("1", "true", "yes"):
+            tx_hash = anchor_via_rpc(obj)
+            if tx_hash:
+                return tx_hash
+    except Exception:
+        logger.exception("anchor_data: rpc attempt failed")
+
+    # 2) fallback: local SHA256 + timestamp, write to data/anchors.log
+    try:
+        payload = json.dumps(obj, sort_keys=True, ensure_ascii=False)
+        stamp = datetime.utcnow().isoformat() + "Z"
+        combined = (payload + stamp).encode("utf-8")
+        tx_hash = hashlib.sha256(combined).hexdigest()
+
+        os.makedirs(os.path.dirname(ANCHORS_LOG) or ".", exist_ok=True)
+        with open(ANCHORS_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"timestamp": stamp, "tx_hash": tx_hash, "payload": obj}, ensure_ascii=False) + "\n")
+
+        logger.info("anchor_data: local fallback tx_hash=%s", tx_hash)
+        return tx_hash
+    except Exception:
+        logger.exception("anchor_data: local fallback failed")
         return None

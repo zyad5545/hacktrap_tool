@@ -1,139 +1,331 @@
+<!-- (ضع هنا نفس ملف attacks.html الذي زودتك به محدث بالألوان وChart.js) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HackTrap - Detected Attacks</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fa; }
-    .sidebar { width: 220px; background: #2c3e50; color: #fff; height: 100vh; position: fixed; padding: 20px; }
-    .sidebar .logo { font-size: 20px; margin-bottom: 30px; }
-    .sidebar .menu-item { margin: 15px 0; cursor: pointer; }
-    .sidebar .menu-item i { margin-right: 8px; }
-    .main-content { margin-left: 220px; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .card { background: #fff; padding: 20px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .attack-details { padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-    .attack-severity-critical { border-left: 4px solid #e74c3c; background: #fceaea; }
-    .attack-severity-high { border-left: 4px solid #f39c12; background: #fff4e5; }
-    .attack-severity-medium { border-left: 4px solid #3498db; background: #eaf4fc; }
-    .attack-severity-low { border-left: 4px solid #2ecc71; background: #eafaf1; }
-    .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; color: #fff; }
-    .badge-critical { background: #e74c3c; }
-    .badge-high { background: #f39c12; }
-    .badge-medium { background: #3498db; }
-    .badge-low { background: #2ecc71; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
-    th { background: #f0f0f0; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>HackTrap - Detected Attacks</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db; /* XSS */
+            --danger: #e74c3c;    /* Brute Force */
+            --warning: #f39c12;   /* DDoS */
+            --success: #2ecc71;   /* Blocked/ok */
+            --violet: #7c3aed;    /* malware */
+            --cyan: #06b6d4;      /* port scan */
+            --muted: #9aa0ad;
+            --card-bg: linear-gradient(180deg, rgba(30,41,59,.98), rgba(15,23,42,.98));
+            --sidebar-width: 250px;
+        }
+
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+        body{background-color:#0f172a;color:#fff;line-height:1.6;display:flex;min-height:100vh}
+        .sidebar{width:var(--sidebar-width);background-color:#162233;padding:20px 16px;position:fixed;height:100vh;overflow:auto}
+        .menu-header{display:flex;align-items:center;font-weight:800;font-size:24px;color:#fff;padding:16px 12px;margin-bottom:8px}
+        .menu-item{display:flex;align-items:center;color:#e5e7eb;padding:14px 16px;border-radius:12px;margin-bottom:8px;text-decoration:none}
+        .menu-item.active{background:#3a495f;border-left:4px solid #5aa3ff}
+        .main-content{flex:1;margin-left:var(--sidebar-width);padding:20px;overflow:auto}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;background:linear-gradient(180deg, rgba(30,41,59,.98), rgba(15,23,42,.98));padding:15px 20px;border-radius:12px}
+        .status-dot{width:12px;height:12px;background:var(--success);border-radius:50%;margin-right:10px}
+        .stats-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:20px}
+        .stat-card{background:var(--card-bg);border-radius:12px;padding:18px;color:#e5e7eb;display:flex;flex-direction:column;position:relative;overflow:hidden}
+        /* Colored left padding effect */
+        .stat-card::before{content:"";position:absolute;left:0;top:0;height:100%;width:8px;border-radius:6px 0 0 6px}
+        .stat-card.brute-force::before{background:var(--danger)}
+        .stat-card.ddos::before{background:var(--warning)}
+        .stat-card.xss::before{background:var(--secondary)}
+        .stat-card.blocked::before{background:var(--success)}
+        .stat-value{font-size:2rem;font-weight:700}
+        .stat-title{color:var(--muted);margin-top:6px}
+
+        .card{background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:20px}
+        .attack-list-container{max-height:600px;overflow-y:auto;padding-right:10px}
+        .attack-details{padding:12px;margin:10px 0;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+        .attack-details .left{flex:1}
+        .attack-details .right{min-width:150px;text-align:right}
+        /* colored left border per attack */
+        .attack-type-bf{border-left:6px solid var(--danger); background: linear-gradient(180deg, rgba(231,76,60,0.03), rgba(0,0,0,0));}
+        .attack-type-ddos{border-left:6px solid var(--warning); background: linear-gradient(180deg, rgba(243,156,18,0.03), rgba(0,0,0,0));}
+        .attack-type-xss{border-left:6px solid var(--secondary); background: linear-gradient(180deg, rgba(52,152,219,0.03), rgba(0,0,0,0));}
+        .attack-type-malware{border-left:6px solid var(--violet); background: linear-gradient(180deg, rgba(124,58,237,0.03), rgba(0,0,0,0));}
+        .attack-type-portscan{border-left:6px solid var(--cyan); background: linear-gradient(180deg, rgba(6,182,212,0.03), rgba(0,0,0,0));}
+        .attack-type-other{border-left:6px solid var(--muted)}
+
+        .badge{padding:6px 10px;border-radius:999px;font-weight:700}
+        .badge-critical{background:var(--danger);color:#fff}
+        .badge-high{background:var(--warning);color:#fff}
+        .badge-medium{background:var(--secondary);color:#fff}
+        .badge-low{background:var(--success);color:#fff}
+
+        @media (max-width:992px){ .main-content{margin-left:70px} }
+    </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="logo"><i class="fas fa-shield-alt"></i> HackTrap</div>
-    <div class="menu-item" onclick="window.location.href='dashboard.html'"><i class="fas fa-chart-bar"></i> Dashboard</div>
-    <div class="menu-item active" onclick="window.location.href='attacks.html'"><i class="fas fa-bolt"></i> Attacks</div>
-    <div class="menu-item" onclick="window.location.href='blockchain.html'"><i class="fas fa-link"></i> Blockchain</div>
-    <div class="menu-item" onclick="window.location.href='settings.html'"><i class="fas fa-cog"></i> Settings</div>
-  </div>
-
-  <div class="main-content">
-    <div class="header">
-      <h1>Detected Attacks</h1>
-      <span id="status">🔄 Loading...</span>
+    <div class="sidebar">
+        <div class="menu-header"><i class="fas fa-shield-alt" style="margin-right:10px;color:#60a5fa"></i>HackTrap</div>
+        <ul style="list-style:none;padding:0">
+            <li><a class="menu-item" href="dashboard.html"><i class="fas fa-chart-bar" style="width:22px;margin-right:12px;opacity:.9"></i>Dashboard</a></li>
+            <li><a class="menu-item active" href="attacks.html"><i class="fas fa-bolt" style="width:22px;margin-right:12px;opacity:.9"></i>Attacks</a></li>
+            <li><a class="menu-item" href="blockchain.html"><i class="fas fa-link" style="width:22px;margin-right:12px;opacity:.9"></i>Blockchain</a></li>
+            <li><a class="menu-item" href="settings.html"><i class="fas fa-cog" style="width:22px;margin-right:12px;opacity:.9"></i>Settings</a></li>
+        </ul>
     </div>
 
-    <div class="card">
-      <h2>Recent Attack Attempts</h2>
-      <div id="attacks-list">Loading...</div>
-    </div>
-
-    <div class="card">
-      <h2>Attack Stats</h2>
-      <canvas id="attackChart"></canvas>
-    </div>
-  </div>
-
-  <script>
-    async function loadAttacks() {
-      try {
-        const res = await fetch("/api/attacks", {
-          headers: { "X-API-KEY": "demo-key" }
-        });
-        const data = await res.json();
-
-        const container = document.getElementById("attacks-list");
-        container.innerHTML = "";
-
-        if (!data.attacks || data.attacks.length === 0) {
-          container.innerHTML = "<p>No attacks recorded yet.</p>";
-          return;
-        }
-
-        let counts = { brute_force: 0, ddos: 0, phishing: 0, other: 0 };
-
-        data.attacks.forEach(attack => {
-          const severityClass = "attack-severity-" + attack.severity.toLowerCase();
-          const badgeClass = "badge-" + attack.severity.toLowerCase();
-
-          const div = document.createElement("div");
-          div.className = `attack-details ${severityClass}`;
-          div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h3>${attack.attack_type}</h3>
-              <span class="badge ${badgeClass}">${attack.severity}</span>
+    <div class="main-content">
+        <div class="header">
+            <h1>Detected Attacks</h1>
+            <div style="display:flex;gap:8px;align-items:center">
+                <div style="display:flex;align-items:center"><div class="status-dot"></div><span>Monitoring: Active</span></div>
             </div>
-            <p>${attack.details || "No details"}</p>
-            <table>
-              <tr><th>Source IP</th><td>${attack.source_ip}</td></tr>
-              <tr><th>Time</th><td>${attack.timestamp}</td></tr>
-              <tr><th>Target</th><td>${attack.target_resource || "-"}</td></tr>
-            </table>
-          `;
-          container.appendChild(div);
+        </div>
 
-          // Count stats
-          if (counts[attack.attack_type.toLowerCase()] !== undefined) {
-            counts[attack.attack_type.toLowerCase()]++;
-          } else {
-            counts.other++;
-          }
-        });
+        <div class="stats-cards">
+            <div class="stat-card brute-force">
+                <div class="stat-value" id="statBrute">-</div>
+                <div class="stat-title">Brute Force</div>
+            </div>
+            <div class="stat-card ddos">
+                <div class="stat-value" id="statDdos">-</div>
+                <div class="stat-title">DDoS</div>
+            </div>
+            <div class="stat-card xss">
+                <div class="stat-value" id="statXss">-</div>
+                <div class="stat-title">XSS Attempts</div>
+            </div>
+            <div class="stat-card blocked">
+                <div class="stat-value" id="statBlocked">-</div>
+                <div class="stat-title">Blocked / Total</div>
+            </div>
+        </div>
 
-        // Update chart
-        updateChart(counts);
-        document.getElementById("status").textContent = "✅ Monitoring Active";
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="font-weight:700">Recent Attack Attempts</div>
+                <div>
+                    <button id="refreshBtn" class="btn" style="background:#334155;color:#e2e7f0;padding:8px 12px;border-radius:8px">Refresh</button>
+                </div>
+            </div>
 
-      } catch (err) {
-        console.error("Error:", err);
-        document.getElementById("attacks-list").innerHTML = "<p style='color:red'>Failed to load attacks.</p>";
-        document.getElementById("status").textContent = "❌ Error";
-      }
+            <div class="attack-list-container" id="attackListContainer">
+                <div class="attack-details attack-type-other">Loading...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex;gap:20px;flex-wrap:wrap">
+                <div style="flex:1;min-width:260px">
+                    <div style="font-weight:600;margin-bottom:10px">Attack Types Distribution</div>
+                    <div style="height:220px"><canvas id="attackTypeChart"></canvas></div>
+                </div>
+                <div style="flex:1;min-width:260px">
+                    <div style="font-weight:600;margin-bottom:10px">Severity Levels</div>
+                    <div style="height:220px"><canvas id="severityChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* Utility helpers */
+function escapeHtml(str){
+    if(str===null||str===undefined) return '';
+    return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+function mapTypeToClass(t){
+    t = (t||'').toLowerCase();
+    if(t.includes('brute')) return 'attack-type-bf';
+    if(t.includes('ddos')) return 'attack-type-ddos';
+    if(t.includes('xss') || t.includes('cross-site')) return 'attack-type-xss';
+    if(t.includes('malware')) return 'attack-type-malware';
+    if(t.includes('port')) return 'attack-type-portscan';
+    return 'attack-type-other';
+}
+function badgeForSeverity(s){
+    s = (s||'').toLowerCase();
+    if(s==='critical') return 'badge-critical';
+    if(s==='high') return 'badge-high';
+    if(s==='medium') return 'badge-medium';
+    if(s==='low') return 'badge-low';
+    return 'badge-medium';
+}
+
+/* Chart vars */
+let chartTypes = null, chartSev = null;
+
+/* load functions */
+async function loadOverviewStats(){
+    try{
+        const res = await fetch('/api/attack_analysis');
+        if(!res.ok) throw new Error(res.status);
+        const j = await res.json();
+        const by_type = j.by_type || {};
+        const by_sev = j.by_severity || {};
+        document.getElementById('statBrute').textContent = by_type['Brute Force'] || by_type['bruteforce'] || 0;
+        document.getElementById('statDdos').textContent = by_type['DDoS'] || by_type['ddos'] || 0;
+        document.getElementById('statXss').textContent = by_type['XSS'] || by_type['xss'] || 0;
+        const total = j.total_attacks || 0;
+        document.getElementById('statBlocked').textContent = total;
+    }catch(e){ console.error('loadOverviewStats', e); }
+}
+
+async function loadAttacks(){
+    try{
+        const resp = await fetch('/api/attacks');
+        if(!resp.ok) throw new Error(resp.status);
+        const j = await resp.json();
+        const attacks = j.attacks || [];
+        renderAttackList(attacks);
+        updateCharts(attacks);
+    }catch(e){
+        console.error('loadAttacks', e);
+        document.getElementById('attackListContainer').innerHTML = '<div class="attack-details attack-type-other">Failed to load attacks.</div>';
     }
+}
 
-    let chart;
-    function updateChart(counts) {
-      const ctx = document.getElementById("attackChart").getContext("2d");
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: ["Brute Force", "DDoS", "Phishing", "Other"],
-          datasets: [{
-            data: [counts.brute_force, counts.ddos, counts.phishing, counts.other],
-            backgroundColor: ["#e74c3c", "#f39c12", "#3498db", "#95a5a6"]
-          }]
+function renderAttackList(list){
+    const container = document.getElementById('attackListContainer');
+    container.innerHTML = '';
+    if(!list.length){
+        container.innerHTML = '<div class="attack-details attack-type-other">No attacks recorded.</div>';
+        return;
+    }
+    list.slice(0,50).forEach((a, index)=>{
+        const type = a.attack_type || 'Other';
+        const sev = a.severity || 'medium';
+        const cls = mapTypeToClass(type);
+        const badgeCls = badgeForSeverity(sev);
+        const el = document.createElement('div');
+        el.className = 'attack-details ' + cls;
+        el.innerHTML = `
+            <div class="left">
+                <div style="font-weight:700">${escapeHtml(type)} <span style="color:var(--muted);font-weight:500"> — ${escapeHtml(a.source_ip||'-')}</span></div>
+                <div style="margin-top:6px;color:var(--muted)">${escapeHtml((a.payload||'').slice(0,140))}</div>
+                <div style="margin-top:8px;color:var(--muted);font-size:0.9rem">
+                    <strong style="color:#fff">Target:</strong> ${escapeHtml(a.target_resource||'-')} &nbsp; • &nbsp;
+                    <strong style="color:#fff">Loc:</strong> ${escapeHtml(a.location||'-')}
+                </div>
+            </div>
+            <div class="right">
+                <div class="${badgeCls}">${escapeHtml(sev)}</div>
+                <div style="margin-top:8px;color:var(--muted)">${escapeHtml(a.timestamp||'')}</div>
+                <div style="margin-top:8px">
+                    <button class="btn details-btn" data-idx="${index}" style="margin-left:6px;padding:6px 8px;border-radius:6px;background:#334155;color:#fff"><i class="fas fa-search"></i></button>
+                    <button class="btn block-btn" data-ip="${escapeHtml(a.source_ip||'')}" style="padding:6px 8px;border-radius:6px;background:#7f1d1d;color:#fff"><i class="fas fa-ban"></i></button>
+                </div>
+            </div>
+        `;
+        container.appendChild(el);
+    });
+    attachListListeners();
+}
+
+function attachListListeners(){
+    document.querySelectorAll('.details-btn').forEach(b=>{
+        b.onclick = function(){
+            const idx = parseInt(this.dataset.idx,10);
+            // we'll fetch again to ensure up-to-date
+            (async ()=>{
+                try{
+                    const r = await fetch('/api/attacks');
+                    const j = await r.json();
+                    const a = (j.attacks||[])[idx] || {};
+                    alert(`Type: ${a.attack_type||'-'}\nIP: ${a.source_ip||'-'}\nTime: ${a.timestamp||'-'}\nPayload: ${(a.payload||'').slice(0,200)}`);
+                }catch(e){ alert('Failed to fetch details'); }
+            })();
+        };
+    });
+    document.querySelectorAll('.block-btn').forEach(b=>{
+        b.onclick = async function(){
+            const ip = this.dataset.ip;
+            if(!ip) return alert('No IP to block');
+            if(!confirm('Block ' + ip + '?')) return;
+            try{
+                const r = await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'block_ip', ip}) });
+                const j = await r.json().catch(()=>({}));
+                alert(j.ok ? ('Blocked ' + ip) : ('Failed: ' + (j.message||r.status)));
+                loadAttacks();
+            }catch(e){ console.error(e); alert('Network error'); }
+        };
+    });
+}
+
+/* Charts init/update */
+function initCharts(){
+    const ctx1 = document.getElementById('attackTypeChart').getContext('2d');
+    chartTypes = new Chart(ctx1, { type: 'doughnut', data: { labels: [], datasets:[{ data:[], backgroundColor:[] }] }, options:{responsive:true,maintainAspectRatio:false} });
+
+    const ctx2 = document.getElementById('severityChart').getContext('2d');
+    chartSev = new Chart(ctx2, { type:'bar', data: { labels:['critical','high','medium','low'], datasets:[{ label:'Attacks', data:[0,0,0,0], backgroundColor:[
+        getComputedStyle(document.documentElement).getPropertyValue('--danger') || '#e74c3c',
+        getComputedStyle(document.documentElement).getPropertyValue('--warning') || '#f39c12',
+        getComputedStyle(document.documentElement).getPropertyValue('--secondary') || '#3498db',
+        getComputedStyle(document.documentElement).getPropertyValue('--success') || '#2ecc71'
+    ] }] }, options:{responsive:true,maintainAspectRatio:false} });
+}
+
+function updateCharts(attacks){
+    const counts = {};
+    const sev = {critical:0,high:0,medium:0,low:0};
+    attacks.forEach(a=>{
+        const t = a.attack_type || 'Other';
+        counts[t] = (counts[t]||0)+1;
+        const s = (a.severity||'medium').toLowerCase();
+        if(sev[s]!==undefined) sev[s]++; else sev.medium++;
+    });
+
+    // colors map
+    const colorMap = {
+        'Brute Force': 'var(--danger)',
+        'BruteForce': 'var(--danger)',
+        'bruteforce': 'var(--danger)',
+        'DDoS': 'var(--warning)',
+        'ddos': 'var(--warning)',
+        'XSS': 'var(--secondary)',
+        'xss': 'var(--secondary)',
+        'Phishing': 'var(--secondary)',
+        'Malware': 'var(--violet)',
+        'Port Scan': 'var(--cyan)',
+        'PortScan': 'var(--cyan)',
+        'Other': 'var(--muted)'
+    };
+
+    const labels = Object.keys(counts);
+    const data = labels.map(l=>counts[l]);
+    const bg = labels.map(l=>{
+        // try exact key then lowercase
+        return (colorMap[l] || colorMap[l.toLowerCase()] || colorMap['Other']);
+    }).map(v=>{
+        // resolve CSS var if present
+        if(v && v.startsWith('var(')){
+            const name = v.slice(4,-1).trim();
+            return getComputedStyle(document.documentElement).getPropertyValue(name) || '#888';
         }
-      });
+        return v || '#888';
+    });
+
+    if(chartTypes){
+        chartTypes.data.labels = labels;
+        chartTypes.data.datasets[0].data = data;
+        chartTypes.data.datasets[0].backgroundColor = bg;
+        chartTypes.update();
     }
+    if(chartSev){
+        chartSev.data.datasets[0].data = [sev.critical, sev.high, sev.medium, sev.low];
+        chartSev.update();
+    }
+}
 
-    // Load data on page load
+/* start */
+document.getElementById('refreshBtn')?.addEventListener('click', ()=> { loadOverviewStats(); loadAttacks(); });
+document.addEventListener('DOMContentLoaded', ()=>{
+    initCharts();
+    loadOverviewStats();
     loadAttacks();
-
-    // Refresh every 10s
-    setInterval(loadAttacks, 10000);
-  </script>
+    setInterval(()=>{ loadOverviewStats(); loadAttacks(); }, 10000);
+});
+</script>
 </body>
 </html>

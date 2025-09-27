@@ -1,0 +1,273 @@
+2025-09-26T10:49:11.845489Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T10:49:12.590112Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T10:49:25.882618Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T10:49:25.882686Z [-] Twisted Version 25.5.0
+2025-09-26T10:49:25.882764Z [-] Cowrie Version 2.0.0
+2025-09-26T10:49:26.050825Z [-] Loaded output engine: jsonlog
+2025-09-26T10:49:26.055743Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T10:49:26.056128Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T10:49:26.057047Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T10:49:26.057242Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f0e6a0cf9d0>
+2025-09-26T10:49:26.635360Z [-] Ready to accept SSH connections
+2025-09-26T10:49:26.635952Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T10:49:26.636144Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f0e6a0cfdf0>
+2025-09-26T10:49:26.724791Z [-] Ready to accept Telnet connections
+2025-09-26T11:42:55.407486Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T11:42:55.408310Z [-] (TCP Port 2223 Closed)
+2025-09-26T11:42:55.408526Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f0e6a0cfdf0>
+2025-09-26T11:42:55.408750Z [-] (TCP Port 2222 Closed)
+2025-09-26T11:42:55.408964Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f0e6a0cf9d0>
+2025-09-26T11:42:55.409271Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T11:42:55.409541Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T11:49:02.717737Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T11:49:04.242694Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T11:49:11.622229Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T11:49:11.622547Z [-] Twisted Version 25.5.0
+2025-09-26T11:49:11.622592Z [-] Cowrie Version 2.0.0
+2025-09-26T11:49:11.761914Z [-] Loaded output engine: jsonlog
+2025-09-26T11:49:11.791018Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T11:49:11.791268Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T11:49:11.816200Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T11:49:11.816402Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f9ee8a39e70>
+2025-09-26T11:49:11.978643Z [-] Ready to accept SSH connections
+2025-09-26T11:49:11.979603Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T11:49:11.979931Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f9ee8a39ba0>
+2025-09-26T11:49:12.026873Z [-] Ready to accept Telnet connections
+2025-09-26T12:07:54.392178Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T12:07:54.393426Z [-] (TCP Port 2223 Closed)
+2025-09-26T12:07:54.393734Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f9ee8a39ba0>
+2025-09-26T12:07:54.393920Z [-] (TCP Port 2222 Closed)
+2025-09-26T12:07:54.394062Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f9ee8a39e70>
+2025-09-26T12:07:54.394302Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T12:07:54.395304Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T12:12:13.952707Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T12:12:14.706917Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T12:12:21.628744Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T12:12:21.628798Z [-] Twisted Version 25.5.0
+2025-09-26T12:12:21.628824Z [-] Cowrie Version 2.0.0
+2025-09-26T12:12:21.807426Z [-] Loaded output engine: jsonlog
+2025-09-26T12:12:21.853392Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T12:12:21.853617Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T12:12:21.919782Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T12:12:21.919983Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7facd0b724d0>
+2025-09-26T12:12:22.139200Z [-] Ready to accept SSH connections
+2025-09-26T12:12:22.139816Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T12:12:22.139970Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7facd0b73490>
+2025-09-26T12:12:22.140213Z [-] Ready to accept Telnet connections
+2025-09-26T13:03:20.051445Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T13:03:20.054429Z [-] (TCP Port 2223 Closed)
+2025-09-26T13:03:20.054820Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7facd0b73490>
+2025-09-26T13:03:20.055007Z [-] (TCP Port 2222 Closed)
+2025-09-26T13:03:20.055193Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7facd0b724d0>
+2025-09-26T13:03:20.055422Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T13:03:20.055714Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T13:09:39.405128Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T13:09:40.117427Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T13:09:49.505278Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T13:09:49.505334Z [-] Twisted Version 25.5.0
+2025-09-26T13:09:49.505362Z [-] Cowrie Version 2.0.0
+2025-09-26T13:09:49.652002Z [-] Loaded output engine: jsonlog
+2025-09-26T13:09:49.680682Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T13:09:49.680921Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T13:09:49.702850Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T13:09:49.703177Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7ff38d1fe4d0>
+2025-09-26T13:09:49.950018Z [-] Ready to accept SSH connections
+2025-09-26T13:09:49.951032Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T13:09:49.951278Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7ff38d1ff490>
+2025-09-26T13:09:49.951594Z [-] Ready to accept Telnet connections
+2025-09-26T13:33:02.468053Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T13:33:02.468944Z [-] (TCP Port 2223 Closed)
+2025-09-26T13:33:02.469360Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7ff38d1ff490>
+2025-09-26T13:33:02.469677Z [-] (TCP Port 2222 Closed)
+2025-09-26T13:33:02.469915Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7ff38d1fe4d0>
+2025-09-26T13:33:02.470388Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T13:33:02.472760Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T15:20:11.449544Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T15:20:12.440357Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T15:20:26.258324Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T15:20:26.258454Z [-] Twisted Version 25.5.0
+2025-09-26T15:20:26.258607Z [-] Cowrie Version 2.0.0
+2025-09-26T15:20:26.335133Z [-] Loaded output engine: jsonlog
+2025-09-26T15:20:26.411250Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T15:20:26.411707Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T15:20:26.412854Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T15:20:26.413041Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f24110739d0>
+2025-09-26T15:20:26.899168Z [-] Ready to accept SSH connections
+2025-09-26T15:20:26.900948Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T15:20:26.901208Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f2411073df0>
+2025-09-26T15:20:27.046740Z [-] Ready to accept Telnet connections
+2025-09-26T17:13:34.732056Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T17:13:34.732925Z [-] (TCP Port 2223 Closed)
+2025-09-26T17:13:34.733289Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f2411073df0>
+2025-09-26T17:13:34.733620Z [-] (TCP Port 2222 Closed)
+2025-09-26T17:13:34.733863Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f24110739d0>
+2025-09-26T17:13:34.734231Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T17:13:34.734697Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T17:20:11.309009Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T17:20:12.658385Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T17:20:20.967932Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T17:20:20.967990Z [-] Twisted Version 25.5.0
+2025-09-26T17:20:20.968017Z [-] Cowrie Version 2.0.0
+2025-09-26T17:20:21.139829Z [-] Loaded output engine: jsonlog
+2025-09-26T17:20:21.204409Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T17:20:21.204653Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T17:20:21.231338Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T17:20:21.231703Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7ff15e4c1e70>
+2025-09-26T17:20:21.470251Z [-] Ready to accept SSH connections
+2025-09-26T17:20:21.470954Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T17:20:21.471122Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7ff15e4c1ba0>
+2025-09-26T17:20:21.471672Z [-] Ready to accept Telnet connections
+2025-09-26T17:34:06.146410Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T17:34:06.149678Z [-] (TCP Port 2223 Closed)
+2025-09-26T17:34:06.150035Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7ff15e4c1ba0>
+2025-09-26T17:34:06.153103Z [-] (TCP Port 2222 Closed)
+2025-09-26T17:34:06.155778Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7ff15e4c1e70>
+2025-09-26T17:34:06.156149Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T17:34:06.156490Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T17:40:17.352545Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T17:40:17.899419Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T17:40:27.262205Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T17:40:27.262288Z [-] Twisted Version 25.5.0
+2025-09-26T17:40:27.262329Z [-] Cowrie Version 2.0.0
+2025-09-26T17:40:27.507670Z [-] Loaded output engine: jsonlog
+2025-09-26T17:40:27.542875Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T17:40:27.543217Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T17:40:27.591803Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T17:40:27.592170Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fbe7005e7a0>
+2025-09-26T17:40:27.716875Z [-] Ready to accept SSH connections
+2025-09-26T17:40:27.717520Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T17:40:27.717671Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fbe7005db10>
+2025-09-26T17:40:27.718087Z [-] Ready to accept Telnet connections
+2025-09-26T17:41:00.232078Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T17:41:00.232712Z [-] (TCP Port 2223 Closed)
+2025-09-26T17:41:00.233246Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fbe7005db10>
+2025-09-26T17:41:00.233502Z [-] (TCP Port 2222 Closed)
+2025-09-26T17:41:00.233664Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fbe7005e7a0>
+2025-09-26T17:41:00.233956Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T17:41:00.234250Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T17:43:28.306841Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T17:43:30.523390Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T17:43:38.904547Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T17:43:38.904609Z [-] Twisted Version 25.5.0
+2025-09-26T17:43:38.904647Z [-] Cowrie Version 2.0.0
+2025-09-26T17:43:39.097538Z [-] Loaded output engine: jsonlog
+2025-09-26T17:43:39.130676Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T17:43:39.130980Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T17:43:39.155464Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T17:43:39.155871Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7feb743cf220>
+2025-09-26T17:43:39.416724Z [-] Ready to accept SSH connections
+2025-09-26T17:43:39.417686Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T17:43:39.417884Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7feb743cf430>
+2025-09-26T17:43:39.418136Z [-] Ready to accept Telnet connections
+2025-09-26T17:58:01.538822Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T17:58:01.539644Z [-] (TCP Port 2223 Closed)
+2025-09-26T17:58:01.539874Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7feb743cf430>
+2025-09-26T17:58:01.540162Z [-] (TCP Port 2222 Closed)
+2025-09-26T17:58:01.540353Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7feb743cf220>
+2025-09-26T17:58:01.540611Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T17:58:01.541197Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T18:04:17.914546Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T18:04:19.189009Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T18:04:28.284093Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T18:04:28.284148Z [-] Twisted Version 25.5.0
+2025-09-26T18:04:28.284205Z [-] Cowrie Version 2.0.0
+2025-09-26T18:04:28.414238Z [-] Loaded output engine: jsonlog
+2025-09-26T18:04:28.440661Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T18:04:28.440894Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T18:04:28.476424Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T18:04:28.476774Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fc8e92b2da0>
+2025-09-26T18:04:28.708130Z [-] Ready to accept SSH connections
+2025-09-26T18:04:28.710763Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T18:04:28.710966Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fc8e92b3490>
+2025-09-26T18:04:28.711223Z [-] Ready to accept Telnet connections
+2025-09-26T19:01:02.458884Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T19:01:02.608399Z [-] (TCP Port 2223 Closed)
+2025-09-26T19:01:02.608864Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fc8e92b3490>
+2025-09-26T19:01:02.609137Z [-] (TCP Port 2222 Closed)
+2025-09-26T19:01:02.609347Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fc8e92b2da0>
+2025-09-26T19:01:02.609931Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T19:01:02.786723Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T19:06:41.854347Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T19:06:42.983327Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T19:06:52.271498Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T19:06:52.271629Z [-] Twisted Version 25.5.0
+2025-09-26T19:06:52.271660Z [-] Cowrie Version 2.0.0
+2025-09-26T19:06:52.476649Z [-] Loaded output engine: jsonlog
+2025-09-26T19:06:52.510647Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T19:06:52.510952Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T19:06:52.693268Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T19:06:52.693714Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f16e0b06da0>
+2025-09-26T19:06:52.840627Z [-] Ready to accept SSH connections
+2025-09-26T19:06:52.841285Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T19:06:52.841446Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f16e0b07490>
+2025-09-26T19:06:52.841674Z [-] Ready to accept Telnet connections
+2025-09-26T19:49:18.934851Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T19:49:18.975783Z [-] (TCP Port 2223 Closed)
+2025-09-26T19:49:18.976091Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f16e0b07490>
+2025-09-26T19:49:18.976299Z [-] (TCP Port 2222 Closed)
+2025-09-26T19:49:18.976467Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f16e0b06da0>
+2025-09-26T19:49:18.976692Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T19:49:18.976986Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T19:54:26.027171Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T19:54:28.508328Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T19:54:38.196867Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T19:54:38.196947Z [-] Twisted Version 25.5.0
+2025-09-26T19:54:38.196984Z [-] Cowrie Version 2.0.0
+2025-09-26T19:54:38.379665Z [-] Loaded output engine: jsonlog
+2025-09-26T19:54:38.413038Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T19:54:38.413512Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T19:54:38.434945Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T19:54:38.435359Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f24ee011e70>
+2025-09-26T19:54:38.790450Z [-] Ready to accept SSH connections
+2025-09-26T19:54:38.791539Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T19:54:38.792023Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f24ee011ba0>
+2025-09-26T19:54:38.792436Z [-] Ready to accept Telnet connections
+2025-09-26T20:14:11.636759Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T20:14:11.637780Z [-] (TCP Port 2223 Closed)
+2025-09-26T20:14:11.638049Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f24ee011ba0>
+2025-09-26T20:14:11.638221Z [-] (TCP Port 2222 Closed)
+2025-09-26T20:14:11.638399Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f24ee011e70>
+2025-09-26T20:14:11.638700Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T20:14:11.651107Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T20:18:17.533597Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T20:18:18.594231Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T20:18:31.000990Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T20:18:31.001057Z [-] Twisted Version 25.5.0
+2025-09-26T20:18:31.001084Z [-] Cowrie Version 2.0.0
+2025-09-26T20:18:31.146031Z [-] Loaded output engine: jsonlog
+2025-09-26T20:18:31.210700Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T20:18:31.210958Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T20:18:31.246911Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T20:18:31.247129Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f8ad0cf73a0>
+2025-09-26T20:18:31.774396Z [-] Ready to accept SSH connections
+2025-09-26T20:18:31.775021Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T20:18:31.775203Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f8ad0cf7490>
+2025-09-26T20:18:31.775461Z [-] Ready to accept Telnet connections
+2025-09-26T20:18:42.922007Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T20:18:42.924161Z [-] (TCP Port 2223 Closed)
+2025-09-26T20:18:42.924513Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7f8ad0cf7490>
+2025-09-26T20:18:42.924740Z [-] (TCP Port 2222 Closed)
+2025-09-26T20:18:42.924909Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7f8ad0cf73a0>
+2025-09-26T20:18:42.925164Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T20:18:42.963995Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.
+2025-09-26T20:23:48.558318Z [-] Unable to write to plugin cache /usr/local/lib/python3.10/site-packages/twisted/plugins/dropin.cache: error number 13
+2025-09-26T20:23:49.292617Z [-] Reading configuration from ['/home/cowrie/cowrie/etc/cowrie.cfg.dist', '/home/cowrie/cowrie/etc/cowrie.cfg']
+2025-09-26T20:23:59.148146Z [-] Python Version 3.10.18 (main, Sep  8 2025, 21:42:39) [GCC 14.2.0]
+2025-09-26T20:23:59.148202Z [-] Twisted Version 25.5.0
+2025-09-26T20:23:59.148229Z [-] Cowrie Version 2.0.0
+2025-09-26T20:23:59.277343Z [-] Loaded output engine: jsonlog
+2025-09-26T20:23:59.324496Z [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/usr/local/bin/python3.10 3.10.18) starting up.
+2025-09-26T20:23:59.324881Z [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2025-09-26T20:23:59.346818Z [-] CowrieSSHFactory starting on 2222
+2025-09-26T20:23:59.347140Z [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fef036d1e70>
+2025-09-26T20:23:59.568599Z [-] Ready to accept SSH connections
+2025-09-26T20:23:59.569288Z [-] HoneyPotTelnetFactory starting on 2223
+2025-09-26T20:23:59.569473Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Starting factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fef036d1ba0>
+2025-09-26T20:23:59.569710Z [-] Ready to accept Telnet connections
+2025-09-26T21:36:20.367820Z [twisted.internet.base#info] Received SIGTERM, shutting down.
+2025-09-26T21:36:20.368840Z [-] (TCP Port 2223 Closed)
+2025-09-26T21:36:20.369214Z [cowrie.telnet.factory.HoneyPotTelnetFactory#info] Stopping factory <cowrie.telnet.factory.HoneyPotTelnetFactory object at 0x7fef036d1ba0>
+2025-09-26T21:36:20.369606Z [-] (TCP Port 2222 Closed)
+2025-09-26T21:36:20.369854Z [cowrie.ssh.factory.CowrieSSHFactory#info] Stopping factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7fef036d1e70>
+2025-09-26T21:36:20.370138Z [twisted.internet.base#info] Main loop terminated.
+2025-09-26T21:36:20.370491Z [twisted.scripts._twistd_unix.UnixAppLogger#info] Server Shut Down.

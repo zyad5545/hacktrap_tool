@@ -1,0 +1,283 @@
+*** Begin Patch
+*** Update File: dashboard/fake_search.html
+@@
+-            <form id="searchForm" class="search-box bg-white rounded-full p-2 flex items-center shadow-lg" onsubmit="return false;">
+-                <input id="searchInput" placeholder="الصق payload هنا (مثال: <script>alert('xss')</script>)"
+-                       class="flex-grow px-4 py-3 bg-transparent outline-none text-gray-700" />
+-                <button id="runBtn" type="button" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700"><i data-feather="search"></i></button>
+-            </form>
++            <!-- ملاحظة: الصفحة الوهمية لا تنفّذ أي سكربت. سترسل telemetry فقط إلى backend -->
++            <form id="searchForm" class="search-box bg-white rounded-full p-2 flex items-center shadow-lg" onsubmit="return false;">
++                <input id="searchInput" placeholder="الصق payload هنا (مثال: <script>alert('xss')</script>)"
++                       aria-label="payload" class="flex-grow px-4 py-3 bg-transparent outline-none text-gray-700" />
++                <button id="runBtn" type="button" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700" title="أرسِل payload للـ honeypot (آمن)"><i data-feather="search"></i></button>
++                <button id="demoBtn" type="button" class="ml-2 bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700" title="Demo">Demo</button>
++            </form>
+@@
+-            <div id="results" class="mt-6 bg-white rounded-lg shadow-lg p-4 hidden"></div>
+-            <div id="error" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded hidden"></div>
+-
+-            <!-- Vulnerable area: intentionally visible and will execute injected scripts -->
+-            <div id="vuln" style="display:none"></div>
++            <div id="results" class="mt-6 bg-white rounded-lg shadow-lg p-4 hidden"></div>
++            <div id="error" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded hidden"></div>
++
++            <!-- Safe display area: نعرض payload بصيغة نصية (لا ننفّذ) -->
++            <div id="vuln" class="mt-6" style="display:none; max-width:820px;">
++                <div class="bg-white p-4 rounded-lg shadow-sm">
++                    <h3 class="font-semibold mb-2">العينة المرسلة (عرض فقط)</h3>
++                    <pre id="vulnText" class="whitespace-pre-wrap text-sm text-gray-800"></pre>
++                    <p class="mt-3 text-xs text-gray-500">لن يتم تنفيذ أي سكربت — هذه صفحة صيد آمنة تُرسل بيانات إلى الـ honeypot.</p>
++                </div>
++            </div>
+@@
+-/* ---------- override window.alert to still call native + send telemetry ---------- */
+-(function(){
+-    const nativeAlert = window.alert.bind(window);
+-
+-    window.alert = function(msg){
+-        try { nativeAlert(msg); } catch(e){ /* ignore */ }
+-        try {
+-            sendTelemetry({
+-                payload_event: true,
+-                event: 'alert_called',
+-                alert_message: String(msg),
+-                url: location.href,
+-                referringUrl: document.referrer || "",
+-                user_agent: navigator.userAgent || "",
+-                timestamp: new Date().toISOString()
+-            });
+-        } catch(e){}
+-    };
+-})();
+-
+-/* ---------- helper to execute scripts reliably ---------- */
+-function executeScriptsFromFragment(fragment, targetNode) {
+-    const scripts = Array.from(fragment.querySelectorAll('script'));
+-    scripts.forEach(s => s.parentNode && s.parentNode.removeChild(s));
+-    targetNode.appendChild(fragment);
+-    scripts.forEach(oldScript => {
+-        const newScript = document.createElement('script');
+-        for (let i = 0; i < oldScript.attributes.length; i++) {
+-            const attr = oldScript.attributes[i];
+-            newScript.setAttribute(attr.name, attr.value);
+-        }
+-        if (oldScript.textContent) {
+-            try {
+-                newScript.text = oldScript.textContent;
+-            } catch(e){
+-                newScript.appendChild(document.createTextNode(oldScript.textContent || ''));
+-            }
+-        }
+-        targetNode.appendChild(newScript);
+-    });
+-}
+-
+-/* ---------- main run function ---------- */
+-function runPayload(p) {
+-    if (!p) return;
+-    try {
+-        const vuln = document.getElementById('vuln');
+-        vuln.innerHTML = '';
+-        vuln.style.display = 'block';
+-
+-        const tmpl = document.createElement('template');
+-        tmpl.innerHTML = p;
+-        const frag = tmpl.content.cloneNode(true);
+-
+-        executeScriptsFromFragment(frag, vuln);
+-
+-        setTimeout(function(){
+-            try {
+-                const info = {
+-                    payload: p,
+-                    url: location.href,
+-                    referringUrl: document.referrer || "",
+-                    cookies: (typeof document !== 'undefined' ? document.cookie : ""),
+-                    user_agent: navigator.userAgent || "",
+-                    dom_snapshot: (document.documentElement ? document.documentElement.innerHTML.slice(0,2000) : ""),
+-                    timestamp: new Date().toISOString()
+-                };
+-                sendTelemetry(info);
+-            } catch(e){}
+-        }, 300);
+-    } catch(e) {
+-        console.warn("runPayload error", e);
+-    }
+-}
+-
+-/* ---------- run any payload provided via ?p=... on page load ---------- */
+-(function(){
+-    try {
+-        const raw = getParamRaw('p');
+-        const p = decodePayloadParam(raw);
+-        if (p) {
+-            runPayload(p);
+-        }
+-    } catch(e){ console.warn("init decode/run error", e); }
+-})();
+-
+-/* ---------- manual run via input & button ---------- */
+-document.getElementById('runBtn').addEventListener('click', function(){
+-    const raw = document.getElementById('searchInput').value || "";
+-    if (!raw) {
+-        const err = document.getElementById('error');
+-        err.classList.remove('hidden');
+-        err.textContent = "الرجاء إدخال payload.";
+-        setTimeout(()=>{ err.classList.add('hidden'); }, 2000);
+-        return;
+-    }
+-    runPayload(raw);
+-});
+-
+-document.getElementById('searchInput').addEventListener('keydown', function(e){
+-    if (e.key === 'Enter') {
+-        e.preventDefault();
+-        document.getElementById('runBtn').click();
+-    }
+-});
++/* ---------- Safe telemetry submission (لا تنفيذ) ---------- */
++(function(){
++    // اقرأ مفتاح API من meta (يمكن تغييره عند النشر)
++    const HONEY_API_KEY = document.querySelector('meta[name="honey-api-key"]')?.content || 'honeypot-secure-key';
++
++    function showError(msg) {
++        const err = document.getElementById('error');
++        err.classList.remove('hidden');
++        err.textContent = msg;
++        setTimeout(()=>{ err.classList.add('hidden'); }, 3000);
++    }
++
++    function showResult(text) {
++        const res = document.getElementById('results');
++        res.classList.remove('hidden');
++        res.innerText = text;
++    }
++
++    function displayPayloadSafe(p) {
++        const vuln = document.getElementById('vuln');
++        const vulnText = document.getElementById('vulnText');
++        vulnText.textContent = p;
++        vuln.style.display = 'block';
++    }
++
++    async function postCapture(info) {
++        try {
++            const resp = await fetch('/api/honeypot/capture', {
++                method: 'POST',
++                headers: {
++                    'Content-Type': 'application/json',
++                    'X-API-KEY': HONEY_API_KEY
++                },
++                body: JSON.stringify(info)
++            });
++            if (!resp.ok) {
++                const txt = await resp.text();
++                showError('خطأ في الإرسال: ' + resp.status + ' ' + txt);
++                return null;
++            }
++            const j = await resp.json();
++            return j;
++        } catch (e) {
++            showError('خطأ شبكة أثناء الإرسال');
++            return null;
++        }
++    }
++
++    async function handleSubmitPayload(raw) {
++        if (!raw) { showError('الرجاء إدخال payload.'); return; }
++        displayPayloadSafe(raw);
++        const info = {
++            payload: raw,
++            timestamp: new Date().toISOString(),
++            source: 'fake_search_page',
++            executed: false,
++            user_agent: navigator.userAgent || '',
++            referringUrl: document.referrer || location.href
++        };
++        const r = await postCapture(info);
++        if (r && r.event_id) {
++            showResult('تم إرسال العينة. event_id=' + r.event_id + (r.tx_hash ? (' tx=' + r.tx_hash) : ''));
++        }
++    }
++
++    // on-load: if ?p=... present, display but do not execute; auto-send telemetry (safe)
++    try {
++        const raw = getParamRaw('p') || getParamRaw('q');
++        const p = decodePayloadParam(raw);
++        if (p) {
++            handleSubmitPayload(p);
++        }
++    } catch(e) { console.warn('init error', e); }
++
++    document.getElementById('runBtn').addEventListener('click', function(){
++        const raw = document.getElementById('searchInput').value || "";
++        handleSubmitPayload(raw);
++    });
++
++    document.getElementById('demoBtn').addEventListener('click', function(){
++        const demo = "<script>console.log('demo')</script>";
++        document.getElementById('searchInput').value = demo;
++        handleSubmitPayload(demo);
++    });
++
++    document.getElementById('searchInput').addEventListener('keydown', function(e){
++        if (e.key === 'Enter') {
++            e.preventDefault();
++            document.getElementById('runBtn').click();
++        }
++    });
++})();
+*** Begin Patch
+*** Update File: backend/app.py
+@@
+ def capture_honeypot():
+     data = request.get_json() or {}
+     data["source_ip"] = data.get("source_ip") or request.remote_addr
+-    event_id = log_honeypot_event(data)
+-    tx_hash = None
+-    try:
+-        if anchor_data and event_id:
+-            tx_hash = anchor_data(data)
+-            if tx_hash:
+-                update_honeypot_anchor(event_id, tx_hash)
+-    except Exception:
+-        logger.exception("Anchoring failed")
+-    return jsonify({"event_id": event_id, "tx_hash": tx_hash})
++    # 1) store honeypot event
++    event_id = log_honeypot_event(data)
++
++    # 2) create a corresponding attacks record (so it appears in dashboard/alerts)
++    try:
++        attack_type = data.get("attack_type") or ("xss" if ("<script" in (data.get("payload") or "").lower() or "alert(" in (data.get("payload") or "").lower()) else "honeypot_event")
++        executed = bool(data.get("executed")) or bool(data.get("alert_message"))
++        severity = "high" if executed else "medium"
++        payload_summary = sanitize_string(data.get("payload") or data.get("alert_message") or "")
++
++        log_attack({
++            "attack_type": attack_type,
++            "source_ip": data.get("source_ip"),
++            "target_resource": "/fake_search",
++            "user_agent": data.get("user_agent"),
++            "payload": payload_summary,
++            "severity": severity,
++            "details": {"honeypot_event_id": event_id, "telemetry": data},
++            "anomaly_score": 0.9 if executed else 0.6
++        })
++    except Exception:
++        logger.exception("Failed to log attack from capture")
++
++    # 3) anchor the event if possible and update DB
++    tx_hash = None
++    try:
++        if anchor_data and event_id:
++            tx_hash = anchor_data(data)
++            if tx_hash:
++                update_honeypot_anchor(event_id, tx_hash)
++    except Exception:
++        logger.exception("Anchoring failed")
++
++    return jsonify({"event_id": event_id, "tx_hash": tx_hash})
+*** End Patch
+
+
