@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-# backend/app.py — AI-only detection (no heuristic fallback). Honeypot redirect only for XSS.
+# backend/app.py — final: AI-only detection (no heuristic fallback). Honeypot redirect only for XSS.
 
 import os
 import joblib
 import urllib.parse
 import logging
-import time
 import json
 from functools import wraps
 from flask import Flask, request, jsonify
@@ -15,7 +14,7 @@ import requests
 # local DB helpers
 from db import init_db, ensure_honeypot_schema, log_attack, log_honeypot_event, update_honeypot_anchor, get_connection
 
-# optional blockchain anchoring helper (if available)
+# optional blockchain anchoring
 try:
     from blockchain import anchor_data
 except Exception:
@@ -26,7 +25,6 @@ app = Flask(__name__)
 CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-app_start = time.time()
 
 # ===== CONFIG =====
 MODEL_PATHS = [
@@ -47,9 +45,6 @@ HONEY_API_KEY = os.getenv("HONEY_API_KEY", "honeypot-secure-key")
 DETECT_THRESHOLD = float(os.getenv("DETECT_THRESHOLD", "0.5"))
 PREFER_REMOTE_AI = os.getenv("PREFER_REMOTE_AI", "0") == "1"
 FORCE_AI_ONLY = os.getenv("FORCE_AI_ONLY", "0") == "1"
-DB_PATH = os.getenv("DB_PATH", "data/app.db")
-ANCHOR_DIR = os.getenv("ANCHOR_DIR", "anchor_records")
-BRUTE_FORCE_THRESHOLD = int(os.getenv("BRUTE_FORCE_THRESHOLD", "5"))  # threshold for failed login -> brute force
 
 attack_model = None
 attack_model_path = None
@@ -88,7 +83,10 @@ def sanitize_string(s, max_length=2000):
 
 def call_ai_endpoint(text):
     """
-    Call remote AI endpoint. Return normalized dict with attack_type and score.
+    Call the remote AI endpoint. Expect JSON response with keys:
+      - attack_type (string: e.g. "xss" / "normal" / other)
+      - score (float 0..1)
+    Returns a dict fallbacking to normal.
     """
     if not AI_ENDPOINT:
         return {"attack_type": "normal", "score": 0.0}
@@ -96,6 +94,7 @@ def call_ai_endpoint(text):
         r = requests.post(AI_ENDPOINT, json={"query": text}, timeout=5)
         if r.status_code == 200:
             j = r.json()
+            # Normalize
             return {
                 "attack_type": str(j.get("attack_type", "normal")) if j else "normal",
                 "score": float(j.get("score", 0.0) if j and j.get("score") is not None else 0.0)
@@ -108,15 +107,15 @@ def call_ai_endpoint(text):
 
 def detect_attack_ai(text):
     """
-    Returns (attack_type, score).
-    AI-only detection (no heuristic fallback).
+    AI-only detection logic (no heuristic).
     Priority:
-      1) FORCE_AI_ONLY -> remote AI
-      2) PREFER_REMOTE_AI -> remote AI
-      3) Local xss_model -> binary XSS detector
-      4) Local attack_model -> generic classification
-      5) Remote AI fallback
-      6) Default normal
+      1) FORCE_AI_ONLY -> remote AI (must have AI_ENDPOINT)
+      2) PREFER_REMOTE_AI -> remote AI (if configured)
+      3) Local xss_model (binary) -> if reports XSS above threshold => xss
+      4) Local generic attack_model -> return predicted class (but won't be used to classify XSS unless class == 'xss')
+      5) Remote AI fallback (if configured)
+      6) Default: normal
+    Returns (attack_type (str), score (float))
     """
     t = (text or "").strip()
     if not t:
@@ -134,10 +133,12 @@ def detect_attack_ai(text):
         logger.info("detect_attack_ai: prefer remote -> %s (%.4f)", res.get("attack_type"), res.get("score"))
         return res.get("attack_type", "normal"), float(res.get("score", 0.0))
 
-    # 3) Local XSS model (binary detector)
+    # 3) Local XSS model (binary detector) — highest priority for XSS decision
     try:
         if xss_model is not None:
-            # two common saved-model formats supported
+            # Support two common patterns of saved model:
+            # - a dict with 'xss_vect' and 'xss_clf' (custom pipeline)
+            # - a scikit-learn estimator with predict_proba
             if isinstance(xss_model, dict) and "xss_vect" in xss_model and "xss_clf" in xss_model:
                 X = xss_model["xss_vect"].transform([t])
                 prob = float(xss_model["xss_clf"].predict_proba(X)[0][1])
@@ -163,7 +164,7 @@ def detect_attack_ai(text):
             except Exception:
                 cls = None
             logger.info("detect_attack_ai: attack_model predicted=%s (score=%.4f)", cls, score)
-            # Only treat as XSS if the model's predicted class explicitly equals 'xss'
+            # Only treat as XSS if the model's class explicitly names 'xss'
             if cls and str(cls).lower() == "xss":
                 return "xss", score
             return (str(cls) if cls else "normal"), score
@@ -196,8 +197,7 @@ def health():
         "status": "ok",
         "ai_endpoint": bool(AI_ENDPOINT),
         "have_attack_model": bool(attack_model),
-        "have_xss_model": bool(xss_model),
-        "uptime_seconds": int(time.time() - app_start)
+        "have_xss_model": bool(xss_model)
     })
 
 @app.route("/search", methods=["POST"])
@@ -238,10 +238,11 @@ def search_endpoint():
         if str(attack_type).lower() == "xss":
             redirect_url = "/fake_search.html?p=" + urllib.parse.quote_plus(query)
             logger.info("Search: routing attacker to honeypot: %s", redirect_url)
-            # NOTE: remove show_message/message to avoid displaying "لقد تم خداع الهاكر" banner on client.
             return jsonify({
                 "action": "honeypot",
-                "redirect": redirect_url
+                "redirect": redirect_url,
+                "show_message": True,
+                "message": "لقد تم خداع الهاكر"
             }), 200
 
         # Non-XSS detections => keep UX normal (still logged)
@@ -265,7 +266,6 @@ def login():
     attack_type, score = detect_attack_ai(payload)
     logger.info("Login: %s -> %s (%.4f)", username, attack_type, score)
 
-    # If AI detected something (e.g., brute force signature from model), log + honeypot event
     if attack_type != "normal" and score >= DETECT_THRESHOLD:
         try:
             log_attack({
@@ -291,89 +291,13 @@ def login():
         except Exception:
             logger.exception("log_honeypot_event failed")
 
-        # For login, instruct client to show trapped banner (legacy). We keep this for login flow.
+        # For login attacks show the "trapped" banner only (no redirect)
         return jsonify({"show_message": True, "message": "لقد تم خداع الهاكر"}), 200
 
-    # Demo login success
+    # Demo login
     if username == "demo" and password == "demo123":
         return jsonify({"success": True, "message": "Logged in"}), 200
 
-    # --- Invalid credentials branch: record failure and escalate to brute-force if repeated ---
-    try:
-        log_attack({
-            "attack_type": "login_failure",
-            "source_ip": request.remote_addr,
-            "target_resource": "/login",
-            "user_agent": request.headers.get("User-Agent", ""),
-            "payload": payload,
-            "severity": "low",
-            "details": {"note": "failed credential attempt"},
-            "anomaly_score": 0.0
-        })
-    except Exception:
-        logger.exception("Failed logging login_failure")
-
-    # Count recent login_failure attempts from this IP (simple count across attacks table)
-    try:
-        conn = get_connection()
-        row = conn.execute(
-            "SELECT COUNT(*) FROM attacks WHERE source_ip = ? AND target_resource = ? AND attack_type = ?",
-            (request.remote_addr, "/login", "login_failure")
-        ).fetchone()
-        conn.close()
-        failure_count = int(row[0]) if row and row[0] is not None else 0
-    except Exception:
-        logger.exception("Failed counting login failures")
-        failure_count = 0
-
-    logger.info("Login failures from %s: %d", request.remote_addr, failure_count)
-
-    # If failure_count >= threshold, escalate to brute_force and instruct to honeypot (try ssh)
-    if failure_count >= BRUTE_FORCE_THRESHOLD:
-        try:
-            # Log a proper brute_force attack record
-            log_attack({
-                "attack_type": "brute_force",
-                "source_ip": request.remote_addr,
-                "target_resource": "/login",
-                "user_agent": request.headers.get("User-Agent", ""),
-                "payload": f"brute-force detected after {failure_count} failures",
-                "severity": "high",
-                "details": {"failures": failure_count},
-                "anomaly_score": 1.0
-            })
-        except Exception:
-            logger.exception("Failed logging brute_force escalation")
-
-        # Attempt to craft an SSH URI to cowrie (note: browsers may not open ssh:// URIs)
-        try:
-            host = request.host.split(':')[0] if request.host else request.remote_addr
-            ssh_uri = f"ssh://{host}:2222"
-            # Also provide a human-readable fallback page we host
-            fallback = f"/ssh_honeypot.html?host={urllib.parse.quote_plus(host)}"
-            # Also log a honeypot event
-            try:
-                log_honeypot_event({
-                    "source_ip": request.remote_addr,
-                    "user_agent": request.headers.get("User-Agent", ""),
-                    "payload": payload,
-                    "note": "escalated to ssh honeypot",
-                    "referringUrl": request.referrer or ""
-                })
-            except Exception:
-                logger.exception("log_honeypot_event failed")
-            logger.info("Escalating %s to SSH honeypot: %s (fallback %s)", request.remote_addr, ssh_uri, fallback)
-            return jsonify({
-                "action": "honeypot",
-                "redirect": ssh_uri,         # client may attempt to open this
-                "fallback": fallback,        # fallback in case ssh:// not handled
-                "show_message": True,
-                "message": "لقد تم خداع الهاكر"
-            }), 200
-        except Exception:
-            logger.exception("Failed to build ssh honeypot redirect")
-
-    # Default invalid credentials response
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 # ----- Honeypot endpoints -----
@@ -385,7 +309,7 @@ def capture_honeypot():
     # normalize some fields
     data["user_agent"] = data.get("user_agent") or request.headers.get("User-Agent", "")
     payload_text = data.get("payload") or data.get("query") or ""
-    payload_lower = (payload_text or "").lower()
+    payload_text = sanitize_string(payload_text, max_length=5000)
 
     # 1) store honeypot event (raw)
     try:
@@ -394,32 +318,28 @@ def capture_honeypot():
         logger.exception("log_honeypot_event failed in capture_honeypot")
         event_id = None
 
-    # 2) decide whether to also create an attack record (link telemetry -> attacks)
+    # 2) decide whether to also create an attack record (AI-only)
+    attack_id = None
     try:
-        # simple heuristics to mark as xss if likely
-        likely_xss = ("<script" in payload_lower) or ("alert(" in payload_lower) or ("onerror=" in payload_lower)
-        attack_type = data.get("attack_type") or ("xss" if likely_xss else "honeypot_event")
-        executed = bool(data.get("executed")) or bool(data.get("alert_message"))
-        severity = "high" if executed or likely_xss else "medium"
-
-        payload_summary = sanitize_string(payload_text or data.get("alert_message") or "")
-
-        # Log an attack so it appears in attacks table & dashboard
-        try:
-            log_attack({
-                "attack_type": attack_type,
-                "source_ip": data.get("source_ip"),
-                "target_resource": "/fake_search",
-                "user_agent": data.get("user_agent"),
-                "payload": payload_summary,
-                "severity": severity,
-                "details": {"honeypot_event_id": event_id, "telemetry": data},
-                "anomaly_score": 0.95 if executed else (0.9 if likely_xss else 0.6)
-            })
-        except Exception:
-            logger.exception("log_attack failed from capture_honeypot")
+        attack_type, score = detect_attack_ai(payload_text)
+        # create attack record only if AI flags it and score >= threshold
+        if attack_type != "normal" and score >= DETECT_THRESHOLD:
+            severity = "high" if score >= 0.8 else "medium"
+            try:
+                attack_id = log_attack({
+                    "attack_type": attack_type,
+                    "source_ip": data.get("source_ip"),
+                    "target_resource": "/fake_search",
+                    "user_agent": data.get("user_agent"),
+                    "payload": sanitize_string(payload_text),
+                    "severity": severity,
+                    "details": {"honeypot_event_id": event_id, "telemetry": data},
+                    "anomaly_score": score
+                })
+            except Exception:
+                logger.exception("log_attack failed from capture_honeypot (AI-only)")
     except Exception:
-        logger.exception("Failed to build attack record from capture_honeypot")
+        logger.exception("Failed to run AI detection for capture_honeypot")
 
     # 3) anchoring (if available)
     tx_hash = None
@@ -428,11 +348,19 @@ def capture_honeypot():
             tx_hash = anchor_data(data)
             if tx_hash:
                 update_honeypot_anchor(event_id, tx_hash)
+                # also update attack record blockchain hash if applicable
+                if attack_id:
+                    try:
+                        conn = get_connection()
+                        conn.execute("UPDATE attacks SET blockchain_tx_hash = ? WHERE id = ?", (tx_hash, attack_id))
+                        conn.commit()
+                        conn.close()
+                    except Exception:
+                        logger.exception("Failed updating attack with blockchain hash")
     except Exception:
         logger.exception("Anchoring failed in capture_honeypot")
 
-    return jsonify({"event_id": event_id, "tx_hash": tx_hash})
-
+    return jsonify({"event_id": event_id, "attack_id": attack_id, "tx_hash": tx_hash})
 
 @app.route("/honeypot/submit", methods=["POST"])
 def honeypot_submit():
@@ -441,10 +369,10 @@ def honeypot_submit():
     Does NOT require the X-API-KEY header because the page is same-origin.
     """
     data = request.get_json() or {}
-    # normalize fields and sanity-check
     data["source_ip"] = data.get("source_ip") or request.remote_addr
     data["user_agent"] = data.get("user_agent") or request.headers.get("User-Agent", "")
     data["referringUrl"] = data.get("referringUrl") or request.referrer or ""
+    payload_text = sanitize_string(data.get("payload") or data.get("alert_message") or "", max_length=5000)
 
     # 1) store raw honeypot event (for timeline / anchoring)
     try:
@@ -453,32 +381,27 @@ def honeypot_submit():
         logger.exception("log_honeypot_event failed")
         event_id = None
 
-    # 2) If the payload appears to be an attack (or attack_type provided), also write an attacks record
+    # 2) AI-only decision for attack creation
+    attack_id = None
     try:
-        # determine attack_type and severity from incoming telemetry
-        attack_type = data.get("attack_type") or "xss" if ("<script" in (data.get("payload") or "").lower() or "alert(" in (data.get("payload") or "").lower()) else "honeypot_event"
-        executed = bool(data.get("executed")) or bool(data.get("alert_message"))
-        severity = "high" if executed else "medium"
-
-        # Build a payload string safe for DB (sanitize length)
-        payload_summary = sanitize_string(data.get("payload") or data.get("alert_message") or "")
-
-        # Log attack record so it shows in dashboard/attacks table
-        try:
-            log_attack({
-                "attack_type": attack_type,
-                "source_ip": data.get("source_ip"),
-                "target_resource": "/fake_search",
-                "user_agent": data.get("user_agent"),
-                "payload": payload_summary,
-                "severity": severity,
-                "details": {"honeypot_event_id": event_id, "telemetry": data},
-                "anomaly_score": 0.9 if executed else 0.6
-            })
-        except Exception:
-            logger.exception("log_attack failed from honeypot_submit")
+        attack_type, score = detect_attack_ai(payload_text)
+        if attack_type != "normal" and score >= DETECT_THRESHOLD:
+            severity = "high" if score >= 0.8 else "medium"
+            try:
+                attack_id = log_attack({
+                    "attack_type": attack_type,
+                    "source_ip": data.get("source_ip"),
+                    "target_resource": "/fake_search",
+                    "user_agent": data.get("user_agent"),
+                    "payload": payload_text,
+                    "severity": severity,
+                    "details": {"honeypot_event_id": event_id, "telemetry": data},
+                    "anomaly_score": score
+                })
+            except Exception:
+                logger.exception("log_attack failed from honeypot_submit (AI-only)")
     except Exception:
-        logger.exception("Failed to build attack record from honeypot telemetry")
+        logger.exception("Failed to run AI detection for honeypot_submit")
 
     # 3) Anchor the honeypot_event (if anchoring available)
     tx_hash = None
@@ -490,254 +413,20 @@ def honeypot_submit():
     except Exception:
         logger.exception("Anchoring failed")
 
-    return jsonify({"ok": True, "event_id": event_id, "tx_hash": tx_hash}), 200
-
-@app.route("/api/action", methods=["POST"])
-@require_api_key
-def api_action():
-    """
-    Simple operator actions endpoint.
-    Supported:
-      - block_ip : logs a manual_block attack record for operator action
-    """
-    data = request.get_json() or {}
-    action = data.get("action")
-    if not action:
-        return jsonify({"ok": False, "message": "missing action"}), 400
-
-    if action == "block_ip":
-        ip = data.get("ip")
-        if not ip:
-            return jsonify({"ok": False, "message": "missing ip"}), 400
-        try:
-            # Log a manual action as an attack record (non-destructive)
-            log_attack({
-                "attack_type": "manual_block",
-                "source_ip": ip,
-                "target_resource": "operator_action",
-                "user_agent": request.headers.get("User-Agent", ""),
-                "payload": f"blocked by operator {ip}",
-                "severity": "low",
-                "details": {"source": "operator"},
-                "anomaly_score": 0.0
-            })
-            logger.info("Operator blocked IP: %s", ip)
-            return jsonify({"ok": True, "message": f"blocked {ip}"}), 200
-        except Exception:
-            logger.exception("Failed to log manual_block")
-            return jsonify({"ok": False, "message": "internal error"}), 500
-
-    return jsonify({"ok": False, "message": "unknown action"}), 400
+    return jsonify({"ok": True, "event_id": event_id, "attack_id": attack_id, "tx_hash": tx_hash}), 200
 
 @app.route("/api/honeypot/events", methods=["GET"])
 @require_api_key
 def list_events():
     conn = get_connection()
-    rows = [dict(r) for r in conn.execute("SELECT * FROM honeypot_events ORDER BY id DESC LIMIT 200")]
+    rows = [dict(r) for r in conn.execute("SELECT * FROM honeypot_events ORDER BY id DESC LIMIT 50")]
     conn.close()
     return jsonify(rows)
-@app.route("/api/attacks", methods=["GET"])
-def api_attacks():
-    api_key = request.headers.get("X-API-KEY")
-    if api_key != "honeypot-secure-key":
-        return jsonify({"error": "unauthorized"}), 401
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM attacks ORDER BY id DESC LIMIT 50;")
-    rows = cursor.fetchall()
-    conn.close()
-
-    attacks = []
-    for r in rows:
-        rr = dict(r)
-        payload_val = rr.get("payload")
-
-        # fallback استخراج من details
-        if not payload_val:
-            details_raw = rr.get("details") or ""
-            try:
-                details_parsed = json.loads(details_raw) if isinstance(details_raw, str) else details_raw
-            except Exception:
-                details_parsed = None
-
-            if isinstance(details_parsed, dict):
-                payload_val = (
-                    details_parsed.get("payload")
-                    or details_parsed.get("query")
-                    or (details_parsed.get("telemetry") or {}).get("payload")
-                    or (details_parsed.get("telemetry") or {}).get("alert_message")
-                    or details_parsed.get("alert_message")
-                    or None
-                )
-
-        attacks.append({
-            "id": rr.get("id"),
-            "timestamp": rr.get("timestamp"),
-            "attack_type": rr.get("attack_type"),
-            "source_ip": rr.get("source_ip"),
-            "target_resource": rr.get("target_resource"),
-            "severity": rr.get("severity"),
-            "payload": payload_val,
-            "details": rr.get("details"),
-            "blockchain_tx_hash": rr.get("blockchain_tx_hash"),
-            "status": rr.get("status"),
-            "anomaly_score": rr.get("anomaly_score")
-        })
-
-    return jsonify({"attacks": attacks})
-
-
-
-
-@app.route("/api/blockchain", methods=["GET"])
-@require_api_key
-def api_blockchain():
-    records = []
-    # 1) collect txs from attacks table
-    try:
-        conn = get_connection()
-        for r in conn.execute("SELECT DISTINCT blockchain_tx_hash FROM attacks WHERE blockchain_tx_hash IS NOT NULL"):
-            tx = r[0]
-            if tx:
-                records.append({"id": tx, "source": "attacks_table"})
-        # anchored txs from honeypot_events
-        for r in conn.execute("SELECT DISTINCT anchored_tx FROM honeypot_events WHERE anchored_tx IS NOT NULL"):
-            tx = r[0]
-            if tx:
-                records.append({"id": tx, "source": "honeypot_events"})
-        conn.close()
-    except Exception:
-        logger.exception("Failed to read DB for blockchain records")
-
-    # 2) also scan anchor_records directory if present
-    try:
-        if os.path.isdir(ANCHOR_DIR):
-            for fname in sorted(os.listdir(ANCHOR_DIR), reverse=True)[:100]:
-                path = os.path.join(ANCHOR_DIR, fname)
-                mtime = None
-                try:
-                    mtime = os.path.getmtime(path)
-                except Exception:
-                    pass
-                records.append({"id": fname, "source": "anchor_dir", "mtime": mtime})
-    except Exception:
-        logger.exception("Failed to scan anchor records directory")
-
-    return jsonify({"records": records})
-
-@app.route("/api/alerts", methods=["GET"])
-@require_api_key
-def api_alerts():
-    alerts = []
-    try:
-        conn = get_connection()
-        # consider recent high/critical attacks as alerts
-        rows = conn.execute("SELECT id, timestamp, attack_type, source_ip, severity, payload FROM attacks WHERE severity IN ('high','critical') ORDER BY id DESC LIMIT 50").fetchall()
-        conn.close()
-        for r in rows:
-            rr = dict(r)
-            alerts.append({
-                "id": f"atk-{rr.get('id')}",
-                "title": f"{rr.get('attack_type') or 'attack'} from {rr.get('source_ip')}",
-                "description": (rr.get("payload") or "")[:200],
-                "time": rr.get("timestamp") or None,
-                "severity": rr.get("severity") or "high",
-                "recorded": True
-            })
-    except Exception:
-        logger.exception("Failed to fetch alerts")
-    return jsonify({"alerts": alerts})
-
-@app.route("/api/attack_analysis", methods=["GET"])
-@require_api_key
-def api_attack_analysis():
-    try:
-        conn = get_connection()
-        types = {r[0]: r[1] for r in conn.execute("SELECT attack_type, COUNT(*) as cnt FROM attacks GROUP BY attack_type").fetchall()}
-        severities = {r[0]: r[1] for r in conn.execute("SELECT severity, COUNT(*) as cnt FROM attacks GROUP BY severity").fetchall()}
-        total = conn.execute("SELECT COUNT(*) FROM attacks").fetchone()[0]
-        conn.close()
-        return jsonify({"total_attacks": total, "by_type": types, "by_severity": severities})
-    except Exception:
-        logger.exception("Failed to compute attack analysis")
-        return jsonify({"total_attacks": 0, "by_type": {}, "by_severity": {}})
-
-@app.route("/api/system_health", methods=["GET"])
-@require_api_key
-def api_system_health():
-    # lightweight health: DB size, counts, uptime
-    info = {"uptime_seconds": int(time.time() - app_start)}
-    try:
-        db_path = DB_PATH
-        if os.path.exists(db_path):
-            info["db_bytes"] = os.path.getsize(db_path)
-        else:
-            info["db_bytes"] = None
-        conn = get_connection()
-        info["attacks_count"] = conn.execute("SELECT COUNT(*) FROM attacks").fetchone()[0]
-        info["honeypot_events_count"] = conn.execute("SELECT COUNT(*) FROM honeypot_events").fetchone()[0]
-        conn.close()
-    except Exception:
-        logger.exception("Failed to compute system health")
-    return jsonify(info)
-
-@app.route("/api/overview", methods=["GET"])
-@require_api_key
-def api_overview():
-    # combined small summary for dashboard
-    try:
-        attacks_resp = api_attack_analysis().get_json()
-        events_resp = api_attacks().get_json()  # will be dict {"attacks": [...]}
-        blockchain_resp = api_blockchain().get_json()
-        alerts_resp = api_alerts().get_json()
-        health_resp = api_system_health().get_json()
-        return jsonify({
-            "summary": attacks_resp,
-            "recent_attacks": events_resp.get("attacks", [])[:20],
-            "blockchain": blockchain_resp.get("records", []),
-            "alerts": alerts_resp.get("alerts", []),
-            "system_health": health_resp
-        })
-    except Exception:
-        logger.exception("Failed to build overview")
-        return jsonify({})
-
-# ----- New endpoint: Clear logs -----
-@app.route("/api/clear_logs", methods=["POST"])
-@require_api_key
-def api_clear_logs():
-    """مسح هجمات و honeypot_events وملفات anchor_records -> إعادة تعيين العدادات."""
-    try:
-        conn = get_connection()
-        conn.execute("DELETE FROM attacks")
-        conn.execute("DELETE FROM honeypot_events")
-        conn.commit()
-        conn.close()
-        # محاولة حذف ملفات anchor_records إن وُجدت
-        try:
-            if os.path.isdir(ANCHOR_DIR):
-                for fname in os.listdir(ANCHOR_DIR):
-                    path = os.path.join(ANCHOR_DIR, fname)
-                    try:
-                        os.remove(path)
-                    except Exception:
-                        logger.exception("Failed to remove anchor file %s", path)
-        except Exception:
-            logger.exception("Failed clearing anchor_records directory")
-        logger.info("Cleared logs: attacks & honeypot_events & anchor_records")
-        return jsonify({"ok": True, "message": "Cleared logs"}), 200
-    except Exception:
-        logger.exception("Failed to clear logs")
-        return jsonify({"ok": False, "message": "Failed to clear logs"}), 500
 
 # Init DB
 try:
     init_db()
     ensure_honeypot_schema()
-    logger.info("DB initialized (tables ensured).")
 except Exception:
     logger.exception("DB init failed")
 
