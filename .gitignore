@@ -1,7 +1,34 @@
-# ignore crash core dumps
-core.*
-*/core.*
-backend/cors/core.*
-# ignore blockchain runtime data
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual envs
+.venv/
+venv/
+*/.venv/
+*/venv/
+
+# SQLite / DB files
+*.db
+*.db-shm
+*.db-wal
+
+# model and joblib large files
+*.joblib
+*.pkl
+
+# runtime data dirs
+data/
+cowrie/
+cowrie-data/
+cowrie-logs/
 blockchain-data/
+anchor_records/
+dist/
+.DS_Store
+
+# core dumps
+core.*
 
