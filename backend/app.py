@@ -536,74 +536,59 @@ def list_events():
     rows = [dict(r) for r in conn.execute("SELECT * FROM honeypot_events ORDER BY id DESC LIMIT 200")]
     conn.close()
     return jsonify(rows)
-
-# ----- New monitoring endpoints for dashboard -----
 @app.route("/api/attacks", methods=["GET"])
-@require_api_key
 def api_attacks():
-    conn = get_connection()
-    rows = conn.execute("""
-        SELECT
-          id,
-          timestamp,
-          attack_type,
-          source_ip,
-          target_resource,
-          severity,
-          details,
-          blockchain_tx_hash,
-          status,
-          anomaly_score,
-          COALESCE(
-            json_extract(details, '$.payload'),
-            json_extract(details, '$.query'),
-            json_extract(details, '$.telemetry.payload'),
-            json_extract(details, '$.alert_message'),
-            json_extract(details, '$.honeypot.payload'),
-            NULL
-          ) AS payload
-        FROM attacks
-        ORDER BY id DESC
-        LIMIT 200
-    """).fetchall()
+    api_key = request.headers.get("X-API-KEY")
+    if api_key != "honeypot-secure-key":
+        return jsonify({"error": "unauthorized"}), 401
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM attacks ORDER BY id DESC LIMIT 50;")
+    rows = cursor.fetchall()
     conn.close()
 
-# بعد fetchall() و conn.close()
-attacks = []
-for r in rows:
-    rr = dict(r)
-    payload_val = rr.get("payload")
-    # إذا لم يعطِ SQL payload حاول استخراج من details نصياً
-    if not payload_val:
-        details_raw = rr.get("details") or ""
-        try:
-            details_parsed = json.loads(details_raw) if isinstance(details_raw, str) else details_raw
-        except Exception:
-            details_parsed = None
+    attacks = []
+    for r in rows:
+        rr = dict(r)
+        payload_val = rr.get("payload")
 
-        if isinstance(details_parsed, dict):
-            # مسارات محتملة داخل details
-            payload_val = (
-                details_parsed.get("payload")
-                or details_parsed.get("query")
-                or (details_parsed.get("telemetry") or {}).get("payload")
-                or (details_parsed.get("telemetry") or {}).get("alert_message")
-                or details_parsed.get("alert_message")
-                or None
-            )
-    attacks.append({
-        "id": rr.get("id"),
-        "timestamp": rr.get("timestamp"),
-        "attack_type": rr.get("attack_type"),
-        "source_ip": rr.get("source_ip"),
-        "target_resource": rr.get("target_resource"),
-        "severity": rr.get("severity"),
-        "payload": payload_val,
-        "details": rr.get("details"),
-        "blockchain_tx_hash": rr.get("blockchain_tx_hash"),
-        "status": rr.get("status"),
-        "anomaly_score": rr.get("anomaly_score")
-    })
+        # fallback استخراج من details
+        if not payload_val:
+            details_raw = rr.get("details") or ""
+            try:
+                details_parsed = json.loads(details_raw) if isinstance(details_raw, str) else details_raw
+            except Exception:
+                details_parsed = None
+
+            if isinstance(details_parsed, dict):
+                payload_val = (
+                    details_parsed.get("payload")
+                    or details_parsed.get("query")
+                    or (details_parsed.get("telemetry") or {}).get("payload")
+                    or (details_parsed.get("telemetry") or {}).get("alert_message")
+                    or details_parsed.get("alert_message")
+                    or None
+                )
+
+        attacks.append({
+            "id": rr.get("id"),
+            "timestamp": rr.get("timestamp"),
+            "attack_type": rr.get("attack_type"),
+            "source_ip": rr.get("source_ip"),
+            "target_resource": rr.get("target_resource"),
+            "severity": rr.get("severity"),
+            "payload": payload_val,
+            "details": rr.get("details"),
+            "blockchain_tx_hash": rr.get("blockchain_tx_hash"),
+            "status": rr.get("status"),
+            "anomaly_score": rr.get("anomaly_score")
+        })
+
+    return jsonify({"attacks": attacks})
+
 
 
 
