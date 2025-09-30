@@ -12,7 +12,22 @@ A comprehensive security monitoring and attack detection system with blockchain-
 
 ## Quick Start
 
-1. Clone the repository
+1. git clone https://github.com/zyad5545/hacktrap_tool.git
+2. cd hacktrap_tool
+3. cat > .env <<'ENV'
+# example .env — edit before running
+ADMIN_API_KEY=honeypot-secure-key
+CHAIN_ID=137
+EXPLORER_BASE_137=https://polygonscan.com/tx/
+HONEYPOT_DB=./data/honeypot.db
+ENV
+4.curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+  https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null 
+5.docker compose build
+docker compose up -d
 2. Copy `.env.example` to `.env` and configure your settings
 3. Run `docker compose up --build`
 4. Access the dashboard at http://localhost:8080/
